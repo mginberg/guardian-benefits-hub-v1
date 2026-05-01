@@ -28,9 +28,15 @@ def status(
     else:
         sftp_error = None
 
-    last_import = db.execute(
-        select(PolicyReport.source_file, func.max(PolicyReport.imported_at))
-    ).first()
+    # Postgres requires GROUP BY when mixing aggregates/non-aggregates; grab latest row instead.
+    last_import = (
+        db.execute(
+            select(PolicyReport.source_file, PolicyReport.imported_at)
+            .order_by(PolicyReport.imported_at.desc())
+            .limit(1)
+        ).first()
+        or None
+    )
 
     unrouted = db.execute(select(func.count(UnroutedPolicyRow.id))).scalar() or 0
 
