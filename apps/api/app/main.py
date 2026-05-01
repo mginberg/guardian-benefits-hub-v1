@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.db_init import init_db
 from app.routers.agencies import router as agencies_router
 from app.routers.auth import router as auth_router
 from app.routers.jobs import router as jobs_router
@@ -21,6 +22,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def _startup() -> None:
+    init_db()
 
 
 @app.get("/api/health")
