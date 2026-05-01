@@ -1,0 +1,80 @@
+services:
+  - type: web
+    name: guardian-benefits-hub-v1-web
+    env: static
+    plan: starter
+    autoDeploy: true
+    buildCommand: cd apps/web && npm ci && npm run build
+    staticPublishPath: apps/web/dist
+    envVars:
+      - key: VITE_API_BASE
+        value: https://guardian-benefits-hub-v1-api.onrender.com
+
+  - type: web
+    name: guardian-benefits-hub-v1-api
+    env: docker
+    plan: starter
+    autoDeploy: true
+    dockerfilePath: ./apps/api/Dockerfile
+    envVars:
+      - key: ENV
+        value: production
+      - key: WEB_ORIGIN
+        value: https://guardian-benefits-hub-v1-web.onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: guardian-benefits-hub-v1-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: guardian-benefits-hub-v1-redis
+          type: redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: BOOTSTRAP_SUPER_ADMIN_EMAIL
+        sync: false
+      - key: BOOTSTRAP_SUPER_ADMIN_PASSWORD
+        sync: false
+
+  - type: worker
+    name: guardian-benefits-hub-v1-worker
+    env: docker
+    plan: starter
+    autoDeploy: true
+    dockerfilePath: ./apps/api/Dockerfile
+    startCommand: python -m app.worker
+    envVars:
+      - key: ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: guardian-benefits-hub-v1-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: guardian-benefits-hub-v1-redis
+          type: redis
+          property: connectionString
+      - key: WEB_ORIGIN
+        value: https://guardian-benefits-hub-v1-web.onrender.com
+      - key: JWT_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: BOOTSTRAP_SUPER_ADMIN_EMAIL
+        sync: false
+      - key: BOOTSTRAP_SUPER_ADMIN_PASSWORD
+        sync: false
+
+  - type: redis
+    name: guardian-benefits-hub-v1-redis
+    plan: starter
+    ipAllowList: []
+
+databases:
+  - name: guardian-benefits-hub-v1-db
+    plan: starter
+
