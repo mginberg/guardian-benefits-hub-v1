@@ -5,32 +5,29 @@ import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import bcrypt
 from cryptography.fernet import Fernet
 from jose import jwt
-from passlib.context import CryptContext
 
 from app.config import settings
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def _bcrypt_secret(password: str) -> str:
-    # bcrypt only considers the first 72 bytes of the password. Instead of truncating,
-    # normalize long secrets to a fixed-length, deterministic value.
+def _bcrypt_input(password: str) -> bytes:
+    # bcrypt only considers the first 72 bytes of the password.
+    # Normalize long secrets deterministically to avoid silent truncation.
     raw = password.encode("utf-8")
     if len(raw) <= 72:
-        return password
-    digest = hashlib.sha256(raw).digest()
-    return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+        return raw
+    return hashlib.sha256(raw).digest()
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(_bcrypt_secret(password))
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(_bcrypt_input(password), salt).decode("utf-8")
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    return pwd_context.verify(_bcrypt_secret(password), password_hash)
+    return bcrypt.checkpw(_bcrypt_input(password), password_hash.encode("utf-8"))
 
 
 def _jwt_now() -> datetime:
