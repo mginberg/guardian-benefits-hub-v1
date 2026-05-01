@@ -30,3 +30,30 @@ class BootstrapResetRequest(BaseModel):
     email: str
     password: str
 
+
+class AgencyResponse(BaseModel):
+    id: str
+    slug: str
+    name: str
+    is_active: bool
+    unl_prefix: str
+    ghl_location_id: str
+    ghl_pit_token_set: bool
+
+
+class AgencyCreateRequest(BaseModel):
+    slug: str
+    name: str
+    unl_prefix: str = ""
+
+
+class AgencyUpdateRequest(BaseModel):
+    name: str | None = None
+    is_active: bool | None = None
+    unl_prefix: str | None = None
+    ghl_location_id: str | None = None
+
+
+class AgencySetGhlTokenRequest(BaseModel):
+    pit_token: str
+

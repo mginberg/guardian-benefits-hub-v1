@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import { apiGet } from './lib/api'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { AgenciesPage } from './pages/AgenciesPage'
 
 type Me = {
   user_id: string
@@ -62,11 +63,21 @@ function Shell({ children, me, onLogout }: { children: React.ReactNode; me: Me; 
   return (
     <div style={{ minHeight: '100vh' }}>
       <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ fontWeight: 800, letterSpacing: 0.2 }}>Guardian Benefits Hub</div>
             <div style={{ fontSize: 12, opacity: 0.75 }}>
               {me.display_name || me.email} · {me.role}{me.impersonated_by ? ' · impersonating (read-only)' : ''}
+            </div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 12 }}>
+              <Link to="/" style={{ color: '#e5e7eb', opacity: 0.9, textDecoration: 'none', fontWeight: 800 }}>
+                Dashboard
+              </Link>
+              {me.role === 'super_admin' && (
+                <Link to="/settings/agencies" style={{ color: '#e5e7eb', opacity: 0.9, textDecoration: 'none', fontWeight: 800 }}>
+                  Agencies
+                </Link>
+              )}
             </div>
           </div>
           <button
@@ -107,6 +118,18 @@ export function App() {
           me ? (
             <Shell me={me} onLogout={logout}>
               <DashboardPage token={token} />
+            </Shell>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/settings/agencies"
+        element={
+          me ? (
+            <Shell me={me} onLogout={logout}>
+              <AgenciesPage token={token} />
             </Shell>
           ) : (
             <Navigate to="/login" replace />
