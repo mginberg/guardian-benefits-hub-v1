@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -11,15 +12,25 @@ from passlib.context import CryptContext
 from app.config import settings
 
 
-pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def _bcrypt_secret(password: str) -> str:
+    # bcrypt only considers the first 72 bytes of the password. Instead of truncating,
+    # normalize long secrets to a fixed-length, deterministic value.
+    raw = password.encode("utf-8")
+    if len(raw) <= 72:
+        return password
+    digest = hashlib.sha256(raw).digest()
+    return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return pwd_context.hash(_bcrypt_secret(password))
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    return pwd_context.verify(password, password_hash)
+    return pwd_context.verify(_bcrypt_secret(password), password_hash)
 
 
 def _jwt_now() -> datetime:
