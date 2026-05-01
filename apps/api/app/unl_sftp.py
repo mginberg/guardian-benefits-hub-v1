@@ -7,13 +7,14 @@ import logging
 import os
 import tempfile
 from datetime import datetime, timezone
+import hashlib
 
 import paramiko
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.models import Agency, PolicyReport, UnroutedPolicyRow
+from app.models import Agency, ImportRun, ImportRunStatus, PolicyReport, UnroutedPolicyRow
 from app.policy_classifier import classify_policy, parse_date
 
 
@@ -139,8 +140,42 @@ def import_latest_policy_file(db: Session) -> dict:
 
     filename = files[0]["filename"]
     logger.info("downloading unl file %s", filename)
-    rows = parse_policy_csv(download_file(filename))
+    raw = download_file(filename)
+    sha = hashlib.sha256(raw).hexdigest()
+
+    existing_run = db.execute(
+        select(ImportRun).where(
+            ImportRun.import_type == "unl_policy",
+            ImportRun.source_sha256 == sha,
+            ImportRun.status == ImportRunStatus.succeeded,
+        )
+    ).scalar_one_or_none()
+    if existing_run:
+        return {
+            "success": True,
+            "skipped": True,
+            "reason": "already_imported",
+            "file": filename,
+            "sha256": sha,
+            "import_run_id": existing_run.id,
+        }
+
+    run = ImportRun(
+        import_type="unl_policy",
+        source_file=filename,
+        source_sha256=sha,
+        status=ImportRunStatus.running,
+        started_at=datetime.now(timezone.utc),
+    )
+    db.add(run)
+    db.commit()
+
+    rows = parse_policy_csv(raw)
     if not rows:
+        run.status = ImportRunStatus.failed
+        run.finished_at = datetime.now(timezone.utc)
+        run.error = "parsed_to_0_rows"
+        db.commit()
         return {"success": False, "error": f"{filename} parsed to 0 rows", "file": filename}
 
     agencies = db.execute(select(Agency).where(Agency.is_active == True)).scalars().all()  # noqa: E712
@@ -254,9 +289,19 @@ def import_latest_policy_file(db: Session) -> dict:
             created += 1
 
     db.commit()
+    run.status = ImportRunStatus.succeeded
+    run.finished_at = datetime.now(timezone.utc)
+    run.total_rows = len(rows)
+    run.routed_rows = routed
+    run.unrouted_rows = unrouted
+    run.created = created
+    run.updated = updated
+    db.commit()
     return {
         "success": True,
         "file": filename,
+        "sha256": sha,
+        "import_run_id": run.id,
         "total_rows": len(rows),
         "routed_rows": routed,
         "unrouted_rows": unrouted,

@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session
 from app.auth import AuthContext, require_role
 from app.db import get_db
 from app.models import PolicyReport, UnroutedPolicyRow
-from app.unl_sftp import import_latest_policy_file, list_policy_files
+from app.jobs import create_job
+from app.queue import enqueue_job
+from app.unl_sftp import list_policy_files
 
 
 router = APIRouter(prefix="/api/unl", tags=["unl"])
@@ -47,7 +49,15 @@ def import_latest(
     db: Session = Depends(get_db),
 ):
     try:
-        return import_latest_policy_file(db)
+        job = create_job(
+            db,
+            job_type="unl_import_latest",
+            agency_id=_ctx.agency_id,
+            created_by_user_id=_ctx.user_id,
+            params={},
+        )
+        enqueue_job(job.id)
+        return {"queued": True, "job_id": job.id}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 

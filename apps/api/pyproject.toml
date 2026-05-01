@@ -17,6 +17,7 @@ dependencies = [
   "redis>=5.0.0",
   "paramiko>=3.4.0",
   "apscheduler>=3.10.0",
+  "orjson>=3.10.0",
 ]
 
 [tool.uvicorn]

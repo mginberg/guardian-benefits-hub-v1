@@ -142,3 +142,69 @@ class UnroutedPolicyRow(Base):
     row_json: Mapped[str] = mapped_column(Text, default="{}")
     imported_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
 
+
+class JobStatus(str, enum.Enum):
+    queued = "queued"
+    running = "running"
+    succeeded = "succeeded"
+    failed = "failed"
+
+
+class Job(Base):
+    __tablename__ = "jobs"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=new_id)
+    agency_id: Mapped[str] = mapped_column(String, ForeignKey("agencies.id"), index=True)
+    created_by_user_id: Mapped[str] = mapped_column(String, index=True)
+
+    job_type: Mapped[str] = mapped_column(String, index=True)
+    status: Mapped[JobStatus] = mapped_column(Enum(JobStatus), default=JobStatus.queued, index=True)
+
+    params_json: Mapped[str] = mapped_column(Text, default="{}")
+    result_json: Mapped[str] = mapped_column(Text, default="{}")
+    error: Mapped[str] = mapped_column(Text, default="")
+
+    queued_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    lock_token: Mapped[str] = mapped_column(String, default="")
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+    __table_args__ = (
+        Index("ix_jobs_status_queued", "status", "queued_at"),
+    )
+
+
+class ImportRunStatus(str, enum.Enum):
+    running = "running"
+    succeeded = "succeeded"
+    failed = "failed"
+
+
+class ImportRun(Base):
+    __tablename__ = "import_runs"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=new_id)
+    import_type: Mapped[str] = mapped_column(String, index=True)  # unl_policy
+    source_file: Mapped[str] = mapped_column(String, index=True)
+    source_sha256: Mapped[str] = mapped_column(String, index=True)
+
+    status: Mapped[ImportRunStatus] = mapped_column(Enum(ImportRunStatus), default=ImportRunStatus.running, index=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    error: Mapped[str] = mapped_column(Text, default="")
+
+    total_rows: Mapped[int] = mapped_column(Integer, default=0)
+    routed_rows: Mapped[int] = mapped_column(Integer, default=0)
+    unrouted_rows: Mapped[int] = mapped_column(Integer, default=0)
+    created: Mapped[int] = mapped_column(Integer, default=0)
+    updated: Mapped[int] = mapped_column(Integer, default=0)
+
+    __table_args__ = (
+        UniqueConstraint("import_type", "source_sha256", name="uq_import_runs_type_sha"),
+    )
+
