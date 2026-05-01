@@ -10,6 +10,18 @@ type UnlStatus = {
   unrouted_rows_total?: number
 }
 
+type UnroutedResponse = {
+  counts: Record<string, number>
+  rows: Array<{
+    id: string
+    source_file: string
+    wa_code: string
+    extracted_prefix: string
+    policy_number: string
+    agent_name: string
+  }>
+}
+
 type JobResponse = {
   id: string
   status: 'queued' | 'running' | 'succeeded' | 'failed'
@@ -21,6 +33,8 @@ export function DashboardPage({ token }: { token: string }) {
   const [healthError, setHealthError] = useState('')
   const [unlStatus, setUnlStatus] = useState<UnlStatus | null>(null)
   const [unlError, setUnlError] = useState('')
+  const [unrouted, setUnrouted] = useState<UnroutedResponse | null>(null)
+  const [unroutedLoading, setUnroutedLoading] = useState(false)
   const [jobId, setJobId] = useState('')
   const [job, setJob] = useState<JobResponse | null>(null)
 
@@ -46,6 +60,16 @@ export function DashboardPage({ token }: { token: string }) {
       } catch (err) {
         if (!cancelled) setUnlError(err instanceof Error ? err.message : 'Failed to load UNL status')
       }
+
+      try {
+        if (!cancelled) setUnroutedLoading(true)
+        const res = await apiGet<UnroutedResponse>('/api/unl/unrouted?limit=15', token)
+        if (!cancelled) setUnrouted(res)
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setUnroutedLoading(false)
+      }
     }
     load()
     return () => {
@@ -67,6 +91,12 @@ export function DashboardPage({ token }: { token: string }) {
             if (!cancelled) setUnlStatus(s)
           } catch (err) {
             if (!cancelled) setUnlError(err instanceof Error ? err.message : 'Failed to load UNL status')
+          }
+          try {
+            const res = await apiGet<UnroutedResponse>('/api/unl/unrouted?limit=15', token)
+            if (!cancelled) setUnrouted(res)
+          } catch {
+            // ignore
           }
         }
       } catch {
@@ -124,6 +154,82 @@ export function DashboardPage({ token }: { token: string }) {
           {unlStatus?.db_error && (
             <div style={{ marginTop: 10, fontSize: 12, color: '#fecaca' }}>
               DB error: {String(unlStatus.db_error)}
+            </div>
+          )}
+
+          {typeof unlStatus?.unrouted_rows_total === 'number' && unlStatus.unrouted_rows_total > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 900, opacity: 0.85 }}>Unrouted details</div>
+              <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>
+                {unroutedLoading ? 'Loading…' : unrouted?.rows?.length ? 'Top prefixes:' : 'No unrouted details yet.'}
+              </div>
+              {!!unrouted?.counts && (
+                <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {Object.entries(unrouted.counts)
+                    .slice(0, 6)
+                    .map(([p, c]) => (
+                      <div
+                        key={p || 'blank'}
+                        style={{
+                          fontSize: 12,
+                          padding: '6px 8px',
+                          borderRadius: 999,
+                          border: '1px solid rgba(255,255,255,0.10)',
+                          background: 'rgba(0,0,0,0.12)',
+                          opacity: 0.95,
+                        }}
+                      >
+                        {p || '(blank)'}: {c}
+                      </div>
+                    ))}
+                </div>
+              )}
+              {!!unrouted?.rows?.length && (
+                <div style={{ marginTop: 8, display: 'grid', gap: 6 }}>
+                  {unrouted.rows.slice(0, 8).map((r) => (
+                    <div
+                      key={r.id}
+                      style={{
+                        fontSize: 12,
+                        padding: '8px 10px',
+                        borderRadius: 12,
+                        border: '1px solid rgba(255,255,255,0.10)',
+                        background: 'rgba(0,0,0,0.12)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                        <div style={{ fontWeight: 900 }}>
+                          {r.extracted_prefix || '(blank)'} · {r.policy_number || '—'}
+                        </div>
+                        <div style={{ opacity: 0.75 }}>{r.wa_code || '—'}</div>
+                      </div>
+                      {r.agent_name && <div style={{ marginTop: 4, opacity: 0.75 }}>{r.agent_name}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={async () => {
+                  await apiPost('/api/unl/reroute-unrouted', { limit: 5000 }, token)
+                  const s = await apiGet<UnlStatus>('/api/unl/status', token)
+                  setUnlStatus(s)
+                  const res = await apiGet<UnroutedResponse>('/api/unl/unrouted?limit=15', token)
+                  setUnrouted(res)
+                }}
+                style={{
+                  marginTop: 10,
+                  padding: '8px 10px',
+                  borderRadius: 12,
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: '#e5e7eb',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                }}
+              >
+                Re-route unrouted now
+              </button>
             </div>
           )}
           <button
