@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     sftp_remote_dir: str = "/"
     sftp_file_pattern: str = "GuardianBenefits_Policy_"
 
+    # Worker schedule (UTC)
+    unl_import_cron_hour: int = 11
+    unl_import_cron_minute: int = 0
+
 
 settings = Settings()
 

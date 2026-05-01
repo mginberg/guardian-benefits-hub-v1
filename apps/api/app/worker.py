@@ -79,7 +79,13 @@ def main() -> None:
     scheduler.add_job(_tick, "interval", minutes=10, id="tick")
 
     # UNL SFTP ingest (daily). Safe to run even if credentials not set (will log error).
-    scheduler.add_job(_unl_import_latest, "cron", hour=11, minute=0, id="unl_import_latest")
+    scheduler.add_job(
+        _unl_import_latest,
+        "cron",
+        hour=settings.unl_import_cron_hour,
+        minute=settings.unl_import_cron_minute,
+        id="unl_import_latest",
+    )
     scheduler.start()
 
     logger.info("worker started")
