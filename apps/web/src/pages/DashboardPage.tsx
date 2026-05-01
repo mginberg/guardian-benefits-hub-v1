@@ -1,12 +1,26 @@
 import React, { useEffect, useState } from 'react'
 import { apiGet, apiPost } from '../lib/api'
 
+type UnlStatus = {
+  sftp_ok?: boolean
+  sftp_error?: string | null
+  last_import_at?: string | null
+  last_import_file?: string | null
+  unrouted_rows_total?: number
+}
+
+type JobResponse = {
+  id: string
+  status: 'queued' | 'running' | 'succeeded' | 'failed'
+  error?: string | null
+}
+
 export function DashboardPage({ token }: { token: string }) {
   const [health, setHealth] = useState<{ ok: boolean; env: string } | null>(null)
   const [error, setError] = useState('')
-  const [unlStatus, setUnlStatus] = useState<any>(null)
+  const [unlStatus, setUnlStatus] = useState<UnlStatus | null>(null)
   const [jobId, setJobId] = useState('')
-  const [job, setJob] = useState<any>(null)
+  const [job, setJob] = useState<JobResponse | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -14,7 +28,7 @@ export function DashboardPage({ token }: { token: string }) {
       try {
         const res = await apiGet<{ ok: boolean; env: string }>('/api/health', token)
         if (!cancelled) setHealth(res)
-        const s = await apiGet('/api/unl/status', token)
+        const s = await apiGet<UnlStatus>('/api/unl/status', token)
         if (!cancelled) setUnlStatus(s)
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load')
@@ -31,11 +45,11 @@ export function DashboardPage({ token }: { token: string }) {
     let cancelled = false
     const interval = setInterval(async () => {
       try {
-        const j = await apiGet(`/api/jobs/${jobId}`, token)
+        const j = await apiGet<JobResponse>(`/api/jobs/${jobId}`, token)
         if (!cancelled) setJob(j)
         if (j?.status === 'succeeded' || j?.status === 'failed') {
           clearInterval(interval)
-          const s = await apiGet('/api/unl/status', token)
+          const s = await apiGet<UnlStatus>('/api/unl/status', token)
           if (!cancelled) setUnlStatus(s)
         }
       } catch {
@@ -54,7 +68,7 @@ export function DashboardPage({ token }: { token: string }) {
         <div>
           <div style={{ fontSize: 22, fontWeight: 950 }}>V1 Dashboard</div>
           <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
-            This is the clean-slate V1 scaffold. Next we’ll add UNL book reporting + instant leaderboard + reconciliation.
+            This is the clean-slate V1 scaffold. Next weâ€™ll add UNL book reporting + instant leaderboard + reconciliation.
           </div>
         </div>
       </div>
@@ -63,9 +77,9 @@ export function DashboardPage({ token }: { token: string }) {
         <div style={{ borderRadius: 16, padding: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ fontSize: 12, opacity: 0.75, fontWeight: 800, letterSpacing: 0.2 }}>API Health</div>
           <div style={{ marginTop: 8, fontSize: 16, fontWeight: 950 }}>
-            {health ? (health.ok ? 'OK' : 'Down') : error ? 'Error' : 'Loading…'}
+            {health ? (health.ok ? 'OK' : 'Down') : error ? 'Error' : 'Loadingâ€¦'}
           </div>
-          <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>env: {health?.env || '—'}</div>
+          <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>env: {health?.env || 'â€”'}</div>
           {error && <div style={{ marginTop: 10, fontSize: 12, color: '#fecaca' }}>{error}</div>}
         </div>
 
@@ -75,10 +89,10 @@ export function DashboardPage({ token }: { token: string }) {
             {unlStatus?.last_import_at ? 'Imported' : 'No imports yet'}
           </div>
           <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>
-            last file: {unlStatus?.last_import_file || '—'}
+            last file: {unlStatus?.last_import_file || 'â€”'}
           </div>
           <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>
-            unrouted rows: {unlStatus?.unrouted_rows_total ?? '—'}
+            unrouted rows: {unlStatus?.unrouted_rows_total ?? 'â€”'}
           </div>
           {unlStatus?.sftp_error && (
             <div style={{ marginTop: 10, fontSize: 12, color: '#fecaca' }}>
@@ -106,7 +120,7 @@ export function DashboardPage({ token }: { token: string }) {
           </button>
           {jobId && (
             <div style={{ marginTop: 10, fontSize: 12, opacity: 0.8 }}>
-              Job: {jobId.slice(0, 8)}… · {job?.status || 'queued'}
+              Job: {jobId.slice(0, 8)}â€¦ Â· {job?.status || 'queued'}
             </div>
           )}
           {job?.error && <div style={{ marginTop: 6, fontSize: 12, color: '#fecaca' }}>{job.error}</div>}
