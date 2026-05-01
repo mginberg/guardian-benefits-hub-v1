@@ -20,6 +20,7 @@ def status(
     _ctx: AuthContext = Depends(require_role("super_admin", "admin")),
     db: Session = Depends(get_db),
 ):
+    db_error = None
     try:
         files = list_policy_files()
     except Exception as exc:
@@ -29,20 +30,29 @@ def status(
         sftp_error = None
 
     # Postgres requires GROUP BY when mixing aggregates/non-aggregates; grab latest row instead.
-    last_import = (
-        db.execute(
-            select(PolicyReport.source_file, PolicyReport.imported_at)
-            .order_by(PolicyReport.imported_at.desc())
-            .limit(1)
-        ).first()
-        or None
-    )
+    try:
+        last_import = (
+            db.execute(
+                select(PolicyReport.source_file, PolicyReport.imported_at)
+                .order_by(PolicyReport.imported_at.desc())
+                .limit(1)
+            ).first()
+            or None
+        )
+    except Exception as exc:
+        last_import = None
+        db_error = str(exc)
 
-    unrouted = db.execute(select(func.count(UnroutedPolicyRow.id))).scalar() or 0
+    try:
+        unrouted = db.execute(select(func.count(UnroutedPolicyRow.id))).scalar() or 0
+    except Exception as exc:
+        unrouted = 0
+        db_error = f"{db_error} | {exc}" if db_error else str(exc)
 
     return {
         "sftp_files": files[:20],
         "sftp_error": sftp_error,
+        "db_error": db_error,
         "last_import_file": last_import[0] if last_import else None,
         "last_import_at": last_import[1].isoformat() if last_import and last_import[1] else None,
         "unrouted_rows_total": int(unrouted),

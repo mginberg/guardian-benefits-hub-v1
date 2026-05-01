@@ -4,6 +4,7 @@ import { apiGet, apiPost } from '../lib/api'
 type UnlStatus = {
   sftp_ok?: boolean
   sftp_error?: string | null
+  db_error?: string | null
   last_import_at?: string | null
   last_import_file?: string | null
   unrouted_rows_total?: number
@@ -118,6 +119,11 @@ export function DashboardPage({ token }: { token: string }) {
           {unlStatus?.sftp_error && (
             <div style={{ marginTop: 10, fontSize: 12, color: '#fecaca' }}>
               SFTP error: {String(unlStatus.sftp_error)}
+            </div>
+          )}
+          {unlStatus?.db_error && (
+            <div style={{ marginTop: 10, fontSize: 12, color: '#fecaca' }}>
+              DB error: {String(unlStatus.db_error)}
             </div>
           )}
           <button
