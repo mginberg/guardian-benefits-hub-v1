@@ -17,21 +17,33 @@ type JobResponse = {
 
 export function DashboardPage({ token }: { token: string }) {
   const [health, setHealth] = useState<{ ok: boolean; env: string } | null>(null)
-  const [error, setError] = useState('')
+  const [healthError, setHealthError] = useState('')
   const [unlStatus, setUnlStatus] = useState<UnlStatus | null>(null)
+  const [unlError, setUnlError] = useState('')
   const [jobId, setJobId] = useState('')
   const [job, setJob] = useState<JobResponse | null>(null)
 
   useEffect(() => {
     let cancelled = false
     async function load() {
+      if (!cancelled) {
+        setHealthError('')
+        setUnlError('')
+      }
+
       try {
-        const res = await apiGet<{ ok: boolean; env: string }>('/api/health', token)
+        // Health does not require auth; avoid sending Authorization to reduce CORS/preflight edge cases.
+        const res = await apiGet<{ ok: boolean; env: string }>('/api/health')
         if (!cancelled) setHealth(res)
+      } catch (err) {
+        if (!cancelled) setHealthError(err instanceof Error ? err.message : 'Failed to load health')
+      }
+
+      try {
         const s = await apiGet<UnlStatus>('/api/unl/status', token)
         if (!cancelled) setUnlStatus(s)
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load')
+        if (!cancelled) setUnlError(err instanceof Error ? err.message : 'Failed to load UNL status')
       }
     }
     load()
@@ -49,8 +61,12 @@ export function DashboardPage({ token }: { token: string }) {
         if (!cancelled) setJob(j)
         if (j?.status === 'succeeded' || j?.status === 'failed') {
           clearInterval(interval)
-          const s = await apiGet<UnlStatus>('/api/unl/status', token)
-          if (!cancelled) setUnlStatus(s)
+          try {
+            const s = await apiGet<UnlStatus>('/api/unl/status', token)
+            if (!cancelled) setUnlStatus(s)
+          } catch (err) {
+            if (!cancelled) setUnlError(err instanceof Error ? err.message : 'Failed to load UNL status')
+          }
         }
       } catch {
         // ignore transient
@@ -77,10 +93,10 @@ export function DashboardPage({ token }: { token: string }) {
         <div style={{ borderRadius: 16, padding: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ fontSize: 12, opacity: 0.75, fontWeight: 800, letterSpacing: 0.2 }}>API Health</div>
           <div style={{ marginTop: 8, fontSize: 16, fontWeight: 950 }}>
-            {health ? (health.ok ? 'OK' : 'Down') : error ? 'Error' : 'Loading…'}
+            {health ? (health.ok ? 'OK' : 'Down') : healthError ? 'Error' : 'Loading…'}
           </div>
           <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>env: {health?.env || '—'}</div>
-          {error && <div style={{ marginTop: 10, fontSize: 12, color: '#fecaca' }}>{error}</div>}
+          {healthError && <div style={{ marginTop: 10, fontSize: 12, color: '#fecaca' }}>{healthError}</div>}
         </div>
 
         <div style={{ borderRadius: 16, padding: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -94,6 +110,11 @@ export function DashboardPage({ token }: { token: string }) {
           <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>
             unrouted rows: {unlStatus?.unrouted_rows_total ?? '—'}
           </div>
+          {unlError && (
+            <div style={{ marginTop: 10, fontSize: 12, color: '#fecaca' }}>
+              {unlError}
+            </div>
+          )}
           {unlStatus?.sftp_error && (
             <div style={{ marginTop: 10, fontSize: 12, color: '#fecaca' }}>
               SFTP error: {String(unlStatus.sftp_error)}
