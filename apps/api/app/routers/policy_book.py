@@ -39,18 +39,20 @@ def summary(
     if ctx.role != "super_admin":
         agency_filter = ctx.agency_id
 
-    base = select(PolicyReport)
+    filters = []
     if agency_filter:
-        base = base.where(PolicyReport.agency_id == agency_filter)
+        filters.append(PolicyReport.agency_id == agency_filter)
     if start_dt:
-        base = base.where(PolicyReport.issue_date >= start_dt)
+        filters.append(PolicyReport.issue_date >= start_dt)
     if end_dt:
-        base = base.where(PolicyReport.issue_date <= end_dt)
+        filters.append(PolicyReport.issue_date <= end_dt)
 
-    total = db.execute(select(func.count()).select_from(base.subquery())).scalar() or 0
+    total = (
+        db.execute(select(func.count(PolicyReport.id)).where(*filters)).scalar()
+        or 0
+    )
     total_prem = (
-        db.execute(select(func.coalesce(func.sum(PolicyReport.annual_premium), 0.0)).select_from(base.subquery()))
-        .scalar()
+        db.execute(select(func.coalesce(func.sum(PolicyReport.annual_premium), 0.0)).where(*filters)).scalar()
         or 0.0
     )
 
@@ -63,15 +65,10 @@ def summary(
             func.coalesce(func.sum(PolicyReport.annual_premium), 0.0),
         )
         .join(PolicyReport, PolicyReport.agency_id == Agency.id)
+        .where(*filters)
         .group_by(Agency.slug, Agency.name)
         .order_by(func.coalesce(func.sum(PolicyReport.annual_premium), 0.0).desc())
     )
-    if agency_filter:
-        q_agency = q_agency.where(PolicyReport.agency_id == agency_filter)
-    if start_dt:
-        q_agency = q_agency.where(PolicyReport.issue_date >= start_dt)
-    if end_dt:
-        q_agency = q_agency.where(PolicyReport.issue_date <= end_dt)
 
     by_agency = [
         {"slug": slug, "name": name, "policies": int(cnt), "annual_premium": float(prem)}
@@ -85,15 +82,10 @@ def summary(
             func.count(PolicyReport.id),
             func.coalesce(func.sum(PolicyReport.annual_premium), 0.0),
         )
+        .where(*filters)
         .group_by(PolicyReport.classification)
         .order_by(func.count(PolicyReport.id).desc())
     )
-    if agency_filter:
-        q_class = q_class.where(PolicyReport.agency_id == agency_filter)
-    if start_dt:
-        q_class = q_class.where(PolicyReport.issue_date >= start_dt)
-    if end_dt:
-        q_class = q_class.where(PolicyReport.issue_date <= end_dt)
 
     by_classification = [
         {"classification": cls or "unknown", "policies": int(cnt), "annual_premium": float(prem)}
