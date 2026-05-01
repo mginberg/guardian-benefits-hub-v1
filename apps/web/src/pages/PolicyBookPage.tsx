@@ -59,16 +59,23 @@ export function PolicyBookPage({ token, me }: { token: string; me: { role: strin
     const params = new URLSearchParams()
     if (start) params.set('start', start)
     if (end) params.set('end', end)
-    return params.toString() ? `?${params.toString()}` : ''
+    return params
   }, [start, end])
 
   async function load() {
     setError('')
     setLoading(true)
     try {
+      const summaryParams = new URLSearchParams(qs)
+      const policiesParams = new URLSearchParams(qs)
+      policiesParams.set('limit', '200')
+
+      const summaryQs = summaryParams.toString()
+      const policiesQs = policiesParams.toString()
+
       const [s, p] = await Promise.all([
-        apiGet<Summary>(`/api/policy-book/summary${qs}`, token),
-        apiGet<Policies>(`/api/policy-book/policies${qs}&limit=200`.replace('?&', '?'), token),
+        apiGet<Summary>(`/api/policy-book/summary${summaryQs ? `?${summaryQs}` : ''}`, token),
+        apiGet<Policies>(`/api/policy-book/policies${policiesQs ? `?${policiesQs}` : ''}`, token),
       ])
       setSummary(s)
       setPolicies(p)
