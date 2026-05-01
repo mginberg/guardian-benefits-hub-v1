@@ -1,12 +1,26 @@
 import React, { useEffect, useState } from 'react'
 import { apiGet, apiPost } from '../lib/api'
 
+type UnlStatus = {
+  sftp_ok?: boolean
+  sftp_error?: string | null
+  last_import_at?: string | null
+  last_import_file?: string | null
+  unrouted_rows_total?: number
+}
+
+type JobResponse = {
+  id: string
+  status: 'queued' | 'running' | 'succeeded' | 'failed'
+  error?: string | null
+}
+
 export function DashboardPage({ token }: { token: string }) {
   const [health, setHealth] = useState<{ ok: boolean; env: string } | null>(null)
   const [error, setError] = useState('')
-  const [unlStatus, setUnlStatus] = useState<any>(null)
+  const [unlStatus, setUnlStatus] = useState<UnlStatus | null>(null)
   const [jobId, setJobId] = useState('')
-  const [job, setJob] = useState<any>(null)
+  const [job, setJob] = useState<JobResponse | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -14,7 +28,7 @@ export function DashboardPage({ token }: { token: string }) {
       try {
         const res = await apiGet<{ ok: boolean; env: string }>('/api/health', token)
         if (!cancelled) setHealth(res)
-        const s = await apiGet('/api/unl/status', token)
+        const s = await apiGet<UnlStatus>('/api/unl/status', token)
         if (!cancelled) setUnlStatus(s)
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load')
@@ -31,11 +45,11 @@ export function DashboardPage({ token }: { token: string }) {
     let cancelled = false
     const interval = setInterval(async () => {
       try {
-        const j = await apiGet(`/api/jobs/${jobId}`, token)
+        const j = await apiGet<JobResponse>(`/api/jobs/${jobId}`, token)
         if (!cancelled) setJob(j)
         if (j?.status === 'succeeded' || j?.status === 'failed') {
           clearInterval(interval)
-          const s = await apiGet('/api/unl/status', token)
+          const s = await apiGet<UnlStatus>('/api/unl/status', token)
           if (!cancelled) setUnlStatus(s)
         }
       } catch {

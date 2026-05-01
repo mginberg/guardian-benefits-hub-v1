@@ -1,10 +1,9 @@
 services:
   - type: web
     name: guardian-benefits-hub-v1-web
-    env: static
-    plan: starter
+    runtime: static
     autoDeploy: true
-    buildCommand: cd apps/web && npm ci && npm run build
+    buildCommand: cd apps/web && npm install && npm run build
     staticPublishPath: apps/web/dist
     envVars:
       - key: VITE_API_BASE
@@ -69,12 +68,13 @@ services:
       - key: BOOTSTRAP_SUPER_ADMIN_PASSWORD
         sync: false
 
-  - type: redis
+  - type: keyvalue
     name: guardian-benefits-hub-v1-redis
     plan: starter
     ipAllowList: []
 
 databases:
   - name: guardian-benefits-hub-v1-db
-    plan: starter
+    plan: basic-256mb
+    diskSizeGB: 5
 

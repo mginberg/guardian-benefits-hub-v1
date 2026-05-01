@@ -1,8 +1,8 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 
@@ -15,7 +15,7 @@ class MeResponse(BaseModel):
     user_id: str
     agency_id: str
     role: str
-    email: EmailStr
+    email: str
     display_name: str
     impersonated_by: str | None = None
 
@@ -23,4 +23,10 @@ class MeResponse(BaseModel):
 class ImpersonateRequest(BaseModel):
     target_user_id: str
     reason: str
+
+
+class BootstrapResetRequest(BaseModel):
+    bootstrap_password: str
+    email: str
+    password: str
 
