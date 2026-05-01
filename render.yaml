@@ -45,7 +45,7 @@ services:
     plan: starter
     autoDeploy: true
     dockerfilePath: ./apps/api/Dockerfile
-    startCommand: python -m app.worker
+    dockerCommand: python -m app.worker
     envVars:
       - key: ENV
         value: production
