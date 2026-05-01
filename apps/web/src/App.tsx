@@ -4,6 +4,7 @@ import { apiGet } from './lib/api'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { AgenciesPage } from './pages/AgenciesPage'
+import { PolicyBookPage } from './pages/PolicyBookPage'
 
 type Me = {
   user_id: string
@@ -73,6 +74,9 @@ function Shell({ children, me, onLogout }: { children: React.ReactNode; me: Me; 
               <Link to="/" style={{ color: '#e5e7eb', opacity: 0.9, textDecoration: 'none', fontWeight: 800 }}>
                 Dashboard
               </Link>
+              <Link to="/policy-book" style={{ color: '#e5e7eb', opacity: 0.9, textDecoration: 'none', fontWeight: 800 }}>
+                Policy Book
+              </Link>
               {me.role === 'super_admin' && (
                 <Link to="/settings/agencies" style={{ color: '#e5e7eb', opacity: 0.9, textDecoration: 'none', fontWeight: 800 }}>
                   Agencies
@@ -130,6 +134,18 @@ export function App() {
           me ? (
             <Shell me={me} onLogout={logout}>
               <AgenciesPage token={token} />
+            </Shell>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/policy-book"
+        element={
+          me ? (
+            <Shell me={me} onLogout={logout}>
+              <PolicyBookPage token={token} me={{ role: me.role, agency_id: me.agency_id }} />
             </Shell>
           ) : (
             <Navigate to="/login" replace />

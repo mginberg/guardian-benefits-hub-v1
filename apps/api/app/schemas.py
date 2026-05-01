@@ -57,3 +57,26 @@ class AgencyUpdateRequest(BaseModel):
 class AgencySetGhlTokenRequest(BaseModel):
     pit_token: str
 
+
+class PolicyBookSummaryResponse(BaseModel):
+    total_policies: int
+    total_annual_premium: float
+    by_agency: list[dict]
+    by_classification: list[dict]
+
+
+class PolicyBookPolicyRow(BaseModel):
+    agency_slug: str
+    agency_name: str
+    policy_number: str
+    wa_code: str
+    agent_name: str
+    issue_date: str | None = None
+    paid_to_date: str | None = None
+    annual_premium: float
+    classification: str
+
+
+class PolicyBookPoliciesResponse(BaseModel):
+    rows: list[PolicyBookPolicyRow]
+
