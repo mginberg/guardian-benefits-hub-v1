@@ -11,23 +11,15 @@ from passlib.context import CryptContext
 from app.config import settings
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def _bcrypt_secret(password: str) -> str:
-    # bcrypt only considers the first 72 bytes of the password.
-    # passlib's bcrypt backend errors if the UTF-8 encoded value exceeds that limit.
-    raw = password.encode("utf-8")
-    if len(raw) <= 72:
-        return password
-    return raw[:72].decode("utf-8", errors="ignore")
+pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(_bcrypt_secret(password))
+    return pwd_context.hash(password)
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    return pwd_context.verify(_bcrypt_secret(password), password_hash)
+    return pwd_context.verify(password, password_hash)
 
 
 def _jwt_now() -> datetime:
