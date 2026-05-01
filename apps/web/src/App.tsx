@@ -62,45 +62,35 @@ function useSession() {
 
 function Shell({ children, me, onLogout }: { children: React.ReactNode; me: Me; onLogout: () => void }) {
   return (
-    <div style={{ minHeight: '100vh' }}>
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontWeight: 800, letterSpacing: 0.2 }}>Guardian Benefits Hub</div>
-            <div style={{ fontSize: 12, opacity: 0.75 }}>
-              {me.display_name || me.email} · {me.role}{me.impersonated_by ? ' · impersonating (read-only)' : ''}
+    <div className="appShell">
+      <div className="topbar">
+        <div className="topbarInner">
+          <div className="brand">
+            <div className="brandTitle">Guardian Benefits Hub</div>
+            <div className="brandMeta">
+              {me.display_name || me.email} · {me.role}
+              {me.impersonated_by ? ' · impersonating (read-only)' : ''}
             </div>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 12 }}>
-              <Link to="/" style={{ color: '#e5e7eb', opacity: 0.9, textDecoration: 'none', fontWeight: 800 }}>
+            <div className="nav">
+              <Link to="/" className="navLink">
                 Dashboard
               </Link>
-              <Link to="/policy-book" style={{ color: '#e5e7eb', opacity: 0.9, textDecoration: 'none', fontWeight: 800 }}>
+              <Link to="/policy-book" className="navLink navLinkPrimary">
                 Policy Book
               </Link>
               {me.role === 'super_admin' && (
-                <Link to="/settings/agencies" style={{ color: '#e5e7eb', opacity: 0.9, textDecoration: 'none', fontWeight: 800 }}>
+                <Link to="/settings/agencies" className="navLink">
                   Agencies
                 </Link>
               )}
             </div>
           </div>
-          <button
-            onClick={onLogout}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 10,
-              border: '1px solid rgba(255,255,255,0.12)',
-              background: 'transparent',
-              color: '#e5e7eb',
-              cursor: 'pointer',
-              fontWeight: 700,
-            }}
-          >
+          <button onClick={onLogout} className="btn btnGhost">
             Logout
           </button>
         </div>
       </div>
-      <div style={{ padding: 20 }}>{children}</div>
+      <div className="container">{children}</div>
     </div>
   )
 }

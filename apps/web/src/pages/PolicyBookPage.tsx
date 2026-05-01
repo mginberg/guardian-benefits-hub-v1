@@ -31,16 +31,11 @@ type Policies = { rows: PolicyRow[] }
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div
-      style={{
-        borderRadius: 16,
-        padding: 14,
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
-      }}
-    >
-      <div style={{ fontSize: 12, opacity: 0.75, fontWeight: 900, letterSpacing: 0.2 }}>{title}</div>
-      <div style={{ marginTop: 10 }}>{children}</div>
+    <div className="card">
+      <div className="cardInner">
+        <div className="cardTitle">{title}</div>
+        <div style={{ marginTop: 10 }}>{children}</div>
+      </div>
     </div>
   )
 }
@@ -60,29 +55,9 @@ function iso(d: Date) {
   return `${y}-${m}-${day}`
 }
 
-function PillButton({
-  children,
-  onClick,
-  active,
-}: {
-  children: React.ReactNode
-  onClick: () => void
-  active?: boolean
-}) {
+function PillButton({ children, onClick, active }: { children: React.ReactNode; onClick: () => void; active?: boolean }) {
   return (
-    <button
-      onClick={onClick}
-      style={{
-        padding: '8px 10px',
-        borderRadius: 999,
-        border: active ? '1px solid rgba(201,168,76,0.35)' : '1px solid rgba(255,255,255,0.14)',
-        background: active ? 'rgba(201,168,76,0.10)' : 'rgba(255,255,255,0.06)',
-        color: '#e5e7eb',
-        fontWeight: 900,
-        cursor: 'pointer',
-        fontSize: 12,
-      }}
-    >
+    <button onClick={onClick} className={active ? 'pill pillActive' : 'pill'}>
       {children}
     </button>
   )
@@ -166,29 +141,22 @@ export function PolicyBookPage({ token, me }: { token: string; me: { role: strin
   }, [summary?.by_agency])
 
   return (
-    <div style={{ display: 'grid', gap: 14 }}>
+    <div className="grid">
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 950 }}>Policy Book</div>
-          <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
+          <div className="pageTitle">Policy Book</div>
+          <div className="pageSub">
             UNL policy book (from nightly SFTP import). {me.role === 'super_admin' ? 'Super admin view.' : 'Scoped to your agency.'}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div className="filters">
           {me.role === 'super_admin' && (
-            <label style={{ display: 'grid', gap: 4, fontSize: 12, opacity: 0.8, minWidth: 220 }}>
+            <label className="field" style={{ minWidth: 240 }}>
               Agency
               <select
                 value={agencyId}
                 onChange={(e) => setAgencyId(e.target.value)}
-                style={{
-                  padding: 10,
-                  borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  background: 'rgba(0,0,0,0.18)',
-                  color: '#e5e7eb',
-                  height: 42,
-                }}
+                className="select"
               >
                 <option value="">All agencies</option>
                 {agencies.map((a) => (
@@ -199,22 +167,22 @@ export function PolicyBookPage({ token, me }: { token: string; me: { role: strin
               </select>
             </label>
           )}
-          <label style={{ display: 'grid', gap: 4, fontSize: 12, opacity: 0.8 }}>
+          <label className="field">
             Start (issue date)
             <input
               value={start}
               onChange={(e) => setStart(e.target.value)}
               placeholder="YYYY-MM-DD"
-              style={{ padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.18)', color: '#e5e7eb' }}
+              className="input"
             />
           </label>
-          <label style={{ display: 'grid', gap: 4, fontSize: 12, opacity: 0.8 }}>
+          <label className="field">
             End (issue date)
             <input
               value={end}
               onChange={(e) => setEnd(e.target.value)}
               placeholder="YYYY-MM-DD"
-              style={{ padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.18)', color: '#e5e7eb' }}
+              className="input"
             />
           </label>
           <button
@@ -223,24 +191,14 @@ export function PolicyBookPage({ token, me }: { token: string; me: { role: strin
               setEnd('')
               setAgencyId('')
             }}
-            style={{
-              alignSelf: 'end',
-              padding: '10px 12px',
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.14)',
-              background: 'rgba(255,255,255,0.06)',
-              color: '#e5e7eb',
-              fontWeight: 900,
-              cursor: 'pointer',
-              height: 42,
-            }}
+            className="btn"
           >
             Clear
           </button>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="pillRow">
         <PillButton
           onClick={() => {
             const d = new Date()
@@ -285,111 +243,122 @@ export function PolicyBookPage({ token, me }: { token: string; me: { role: strin
       </div>
 
       {error && (
-        <div style={{ fontSize: 12, color: '#fecaca', border: '1px solid rgba(254,202,202,0.35)', background: 'rgba(254,202,202,0.06)', padding: 12, borderRadius: 14 }}>
-          {error}
-        </div>
+        <div className="alert">{error}</div>
       )}
 
       {loading ? (
-        <div style={{ opacity: 0.8 }}>Loading…</div>
+        <div className="grid2">
+          <div className="card">
+            <div className="cardInner">
+              <div className="cardTitle">Total policies</div>
+              <div style={{ marginTop: 10, height: 30, width: 180 }} className="skeleton" />
+            </div>
+          </div>
+          <div className="card">
+            <div className="cardInner">
+              <div className="cardTitle">Total annual premium</div>
+              <div style={{ marginTop: 10, height: 30, width: 220 }} className="skeleton" />
+            </div>
+          </div>
+        </div>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+          <div className="grid2">
             <Card title="Total policies">
-              <div style={{ fontSize: 20, fontWeight: 950 }}>{summary?.total_policies?.toLocaleString() || '0'}</div>
+              <div className="kpi">
+                <div className="kpiValue">{summary?.total_policies?.toLocaleString() || '0'}</div>
+                <div className="kpiHint">policies</div>
+              </div>
             </Card>
             <Card title="Total annual premium">
-              <div style={{ fontSize: 20, fontWeight: 950 }}>{money(summary?.total_annual_premium || 0)}</div>
+              <div className="kpi">
+                <div className="kpiValue">{money(summary?.total_annual_premium || 0)}</div>
+                <div className="kpiHint">annual</div>
+              </div>
             </Card>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 12 }}>
+          <div className="grid3">
             <Card title="Premium by agency (top)">
-              <div style={{ display: 'grid', gap: 10 }}>
+              <div className="grid" style={{ gap: 10 }}>
                 {chart.items.map((a) => {
                   const pct = Math.round(((a.annual_premium || 0) / chart.max) * 100)
                   return (
-                    <div key={a.slug} style={{ display: 'grid', gap: 6 }}>
+                    <div key={a.slug} className="grid" style={{ gap: 6 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12 }}>
                         <div style={{ fontWeight: 950 }}>{a.name}</div>
-                        <div style={{ opacity: 0.8 }}>
+                        <div style={{ color: 'var(--muted)' }}>
                           {money(a.annual_premium)} · {a.policies}
                         </div>
                       </div>
-                      <div style={{ height: 10, borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-                        <div
-                          style={{
-                            width: `${pct}%`,
-                            height: '100%',
-                            background: 'linear-gradient(90deg, rgba(201,168,76,0.55), rgba(201,168,76,0.15))',
-                          }}
-                        />
+                      <div className="bar">
+                        <div className="barFill" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   )
                 })}
-                {!chart.items.length && <div style={{ fontSize: 12, opacity: 0.7 }}>No data yet.</div>}
+                {!chart.items.length && <div style={{ fontSize: 12, color: 'var(--muted)' }}>No data yet.</div>}
               </div>
             </Card>
 
             <Card title="By agency (top)">
-              <div style={{ display: 'grid', gap: 6 }}>
+              <div className="grid" style={{ gap: 6 }}>
                 {(summary?.by_agency || []).slice(0, 10).map((a) => (
                   <div key={a.slug} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12 }}>
                     <div style={{ fontWeight: 900 }}>{a.name}</div>
-                    <div style={{ opacity: 0.8 }}>
+                    <div style={{ color: 'var(--muted)' }}>
                       {a.policies} · {money(a.annual_premium)}
                     </div>
                   </div>
                 ))}
-                {!summary?.by_agency?.length && <div style={{ fontSize: 12, opacity: 0.7 }}>No data yet.</div>}
+                {!summary?.by_agency?.length && <div style={{ fontSize: 12, color: 'var(--muted)' }}>No data yet.</div>}
               </div>
             </Card>
 
             <Card title="By classification">
-              <div style={{ display: 'grid', gap: 6 }}>
+              <div className="grid" style={{ gap: 6 }}>
                 {(summary?.by_classification || []).map((c) => (
                   <div key={c.classification} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12 }}>
                     <div style={{ fontWeight: 900 }}>{c.classification}</div>
-                    <div style={{ opacity: 0.8 }}>
+                    <div style={{ color: 'var(--muted)' }}>
                       {c.policies} · {money(c.annual_premium)}
                     </div>
                   </div>
                 ))}
-                {!summary?.by_classification?.length && <div style={{ fontSize: 12, opacity: 0.7 }}>No data yet.</div>}
+                {!summary?.by_classification?.length && <div style={{ fontSize: 12, color: 'var(--muted)' }}>No data yet.</div>}
               </div>
             </Card>
           </div>
 
           <Card title="Latest policies (sample)">
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+            <div className="tableWrap">
+              <table className="table">
                 <thead>
-                  <tr style={{ fontSize: 12, opacity: 0.75, textAlign: 'left' }}>
-                    <th style={{ padding: '10px 8px' }}>Agency</th>
-                    <th style={{ padding: '10px 8px' }}>Policy #</th>
-                    <th style={{ padding: '10px 8px' }}>Agent</th>
-                    <th style={{ padding: '10px 8px' }}>Issue</th>
-                    <th style={{ padding: '10px 8px' }}>Paid-to</th>
-                    <th style={{ padding: '10px 8px' }}>Annual prem</th>
-                    <th style={{ padding: '10px 8px' }}>Class</th>
+                  <tr>
+                    <th className="th">Agency</th>
+                    <th className="th">Policy #</th>
+                    <th className="th">Agent</th>
+                    <th className="th">Issue</th>
+                    <th className="th">Paid-to</th>
+                    <th className="th">Annual prem</th>
+                    <th className="th">Class</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(policies?.rows || []).slice(0, 200).map((r, idx) => (
-                    <tr key={`${r.policy_number}-${idx}`} style={{ fontSize: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                      <td style={{ padding: '10px 8px', fontWeight: 900 }}>{r.agency_name}</td>
-                      <td style={{ padding: '10px 8px', opacity: 0.9 }}>{r.policy_number || '—'}</td>
-                      <td style={{ padding: '10px 8px', opacity: 0.9 }}>{r.agent_name || '—'}</td>
-                      <td style={{ padding: '10px 8px', opacity: 0.85 }}>{r.issue_date || '—'}</td>
-                      <td style={{ padding: '10px 8px', opacity: 0.85 }}>{r.paid_to_date || '—'}</td>
-                      <td style={{ padding: '10px 8px', opacity: 0.9 }}>{money(r.annual_premium || 0)}</td>
-                      <td style={{ padding: '10px 8px', opacity: 0.9 }}>{r.classification || 'unknown'}</td>
+                    <tr key={`${r.policy_number}-${idx}`}>
+                      <td className="td tdStrong">{r.agency_name}</td>
+                      <td className="td">{r.policy_number || '—'}</td>
+                      <td className="td">{r.agent_name || '—'}</td>
+                      <td className="td">{r.issue_date || '—'}</td>
+                      <td className="td">{r.paid_to_date || '—'}</td>
+                      <td className="td">{money(r.annual_premium || 0)}</td>
+                      <td className="td">{r.classification || 'unknown'}</td>
                     </tr>
                   ))}
                   {!policies?.rows?.length && (
                     <tr>
-                      <td colSpan={7} style={{ padding: 12, fontSize: 12, opacity: 0.7 }}>
+                      <td colSpan={7} className="td" style={{ color: 'var(--muted)' }}>
                         No policies yet. Run an import or wait for the nightly SFTP pull.
                       </td>
                     </tr>
