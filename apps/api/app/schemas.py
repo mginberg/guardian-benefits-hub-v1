@@ -24,3 +24,9 @@ class ImpersonateRequest(BaseModel):
     target_user_id: str
     reason: str
 
+
+class BootstrapResetRequest(BaseModel):
+    bootstrap_password: str
+    email: str
+    password: str
+
