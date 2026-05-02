@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query
 from sqlalchemy import case, func, select
@@ -20,26 +21,30 @@ router = APIRouter(prefix="/api/leaderboard", tags=["leaderboard"])
 
 # ── date window helpers ────────────────────────────────────────────────────
 
-def _utc_today() -> date:
-    return datetime.now(timezone.utc).date()
+_ET = ZoneInfo("America/New_York")
+
+
+def _et_today() -> date:
+    """Return today's date in US Eastern time (matches the business timezone)."""
+    return datetime.now(_ET).date()
 
 
 def _window(period: str) -> tuple[datetime, datetime]:
-    today = _utc_today()
+    today = _et_today()
     if period == "daily":
-        start = datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
+        # midnight ET → midnight ET next day, stored as UTC-aware
+        start = datetime(today.year, today.month, today.day, tzinfo=_ET).astimezone(timezone.utc)
         end = start + timedelta(days=1)
     elif period == "weekly":
         monday = today - timedelta(days=today.weekday())
-        start = datetime(monday.year, monday.month, monday.day, tzinfo=timezone.utc)
+        start = datetime(monday.year, monday.month, monday.day, tzinfo=_ET).astimezone(timezone.utc)
         end = start + timedelta(days=7)
     elif period == "monthly":
-        start = datetime(today.year, today.month, 1, tzinfo=timezone.utc)
-        # First day of next month
+        start = datetime(today.year, today.month, 1, tzinfo=_ET).astimezone(timezone.utc)
         if today.month == 12:
-            end = datetime(today.year + 1, 1, 1, tzinfo=timezone.utc)
+            end = datetime(today.year + 1, 1, 1, tzinfo=_ET).astimezone(timezone.utc)
         else:
-            end = datetime(today.year, today.month + 1, 1, tzinfo=timezone.utc)
+            end = datetime(today.year, today.month + 1, 1, tzinfo=_ET).astimezone(timezone.utc)
     else:
         raise ValueError(f"Unknown period: {period}")
     return start, end
@@ -57,7 +62,7 @@ def _build_period_data(
     period: str,
 ) -> dict[str, Any]:
     start, end = _window(period)
-    today = _utc_today()
+    today = _et_today()
 
     # Period display strings
     if period == "daily":
