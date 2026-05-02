@@ -66,8 +66,7 @@ type NavItem = {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard',    to: '/',                 icon: '⬡' },
-  { label: 'Policy Book',  to: '/policy-book',      icon: '📋' },
+  { label: 'Dashboard',    to: '/',                  icon: '⬡' },
   { label: 'Agencies',     to: '/settings/agencies', icon: '🏢', adminOnly: true },
 ]
 
@@ -186,15 +185,7 @@ export function App() {
       />
       <Route
         path="/policy-book"
-        element={
-          me ? (
-            <Shell me={me} onLogout={logout} pageTitle="Policy Book" pageSub="Filter and explore policies">
-              <PolicyBookPage token={token} me={{ role: me.role, agency_id: me.agency_id }} />
-            </Shell>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
+        element={<Navigate to="/" replace />}
       />
       <Route
         path="/settings/agencies"

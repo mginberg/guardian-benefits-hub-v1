@@ -200,6 +200,50 @@ function RateBar({ label, value, color }: { label: string; value: number; color?
   )
 }
 
+/** Ranked list with alternating row shading + a thin inline proportion bar per row */
+function StatList({
+  items,
+  color = 'rgba(201,168,76,.75)',
+  emptyMsg = 'No data.',
+}: {
+  items: Array<{ label: string; value: number; sub?: string }>
+  color?: string
+  emptyMsg?: string
+}) {
+  if (!items.length) return <div className="pageSub" style={{ marginTop: 8 }}>{emptyMsg}</div>
+  const peak = Math.max(...items.map(i => i.value), 1)
+  return (
+    <div style={{ marginTop: 10 }}>
+      {items.map((item, idx) => (
+        <div
+          key={item.label}
+          style={{
+            padding: '7px 8px',
+            borderRadius: 8,
+            background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,.03)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+            <div style={{ fontSize: 12, color: 'var(--muted)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              title={item.label}>
+              {item.label}
+            </div>
+            <div style={{ fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{item.value.toLocaleString()}</div>
+          </div>
+          <div style={{ height: 3, borderRadius: 999, background: 'rgba(255,255,255,.07)', marginTop: 5 }}>
+            <div style={{
+              height: '100%', borderRadius: 999,
+              width: `${Math.round((item.value / peak) * 100)}%`,
+              background: color,
+              transition: 'width .3s ease',
+            }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
   const [unlStatus, setUnlStatus] = useState<UnlStatus | null>(null)
   const [jobId, setJobId] = useState('')
@@ -599,14 +643,11 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
       <div className="card">
         <div className="cardInner">
           <div className="cardTitle">Top states (active)</div>
-          <div style={{ marginTop: 10, display: 'grid', gap: 7 }}>
-            {Object.entries(stats.states || {}).slice(0, 10).map(([s, c]) => (
-              <div key={s} style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                <div className="kpiHint">{s}</div>
-                <div style={{ fontWeight: 700, fontSize: 13 }}>{c.toLocaleString()}</div>
-              </div>
-            ))}
-          </div>
+          <StatList
+            items={Object.entries(stats.states || {}).slice(0, 12).map(([s, c]) => ({ label: s, value: c }))}
+            color="rgba(52,211,153,.80)"
+            emptyMsg="No state data."
+          />
         </div>
       </div>
 
@@ -625,15 +666,14 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
           <div className="card">
             <div className="cardInner">
               <div className="cardTitle">Contract reasons</div>
-              <div style={{ marginTop: 10, display: 'grid', gap: 7 }}>
-                {(extras.reason_breakdown || []).slice(0, 12).map(r => (
-                  <div key={r.code} style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                    <div className="kpiHint" title={`${r.code} — ${r.label}`}>{r.code} · {r.label}</div>
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>{r.count.toLocaleString()}</div>
-                  </div>
-                ))}
-                {!extras.reason_breakdown?.length && <div className="pageSub">No reason codes.</div>}
-              </div>
+              <StatList
+                items={(extras.reason_breakdown || []).slice(0, 12).map(r => ({
+                  label: `${r.code} · ${r.label}`,
+                  value: r.count,
+                }))}
+                color="rgba(99,102,241,.80)"
+                emptyMsg="No reason codes."
+              />
             </div>
           </div>
 
@@ -641,19 +681,16 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
             <div className="cardInner">
               <div className="cardTitle">Underwriting speed (app → issue)</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 8 }}>
-                <div style={{ fontSize: 28, fontWeight: 800 }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--c-teal)' }}>
                   {(extras.underwriting_speed?.avg_days ?? 0).toFixed(1)}d
                 </div>
                 <div className="kpiHint">avg · n={(extras.underwriting_speed?.sample_size ?? 0).toLocaleString()}</div>
               </div>
-              <div style={{ marginTop: 10, display: 'grid', gap: 7 }}>
-                {Object.entries(extras.underwriting_speed?.distribution || {}).map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                    <div className="kpiHint">{k}</div>
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>{Number(v).toLocaleString()}</div>
-                  </div>
-                ))}
-              </div>
+              <StatList
+                items={Object.entries(extras.underwriting_speed?.distribution || {}).map(([k, v]) => ({ label: k, value: Number(v) }))}
+                color="rgba(34,211,238,.80)"
+                emptyMsg="No underwriting data."
+              />
             </div>
           </div>
 
@@ -661,19 +698,16 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
             <div className="cardInner">
               <div className="cardTitle">Cancellation deep-dive</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 8 }}>
-                <div style={{ fontSize: 28, fontWeight: 800 }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--c-orange)' }}>
                   {(extras.cancellation?.avg_days_on_books ?? 0).toFixed(1)}d
                 </div>
                 <div className="kpiHint">avg days on books</div>
               </div>
-              <div style={{ marginTop: 10, display: 'grid', gap: 7 }}>
-                {Object.entries(extras.cancellation?.days_buckets || {}).map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                    <div className="kpiHint">{k}</div>
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>{Number(v).toLocaleString()}</div>
-                  </div>
-                ))}
-              </div>
+              <StatList
+                items={Object.entries(extras.cancellation?.days_buckets || {}).map(([k, v]) => ({ label: k, value: Number(v) }))}
+                color="rgba(248,113,113,.80)"
+                emptyMsg="No cancellation data."
+              />
             </div>
           </div>
         </>
