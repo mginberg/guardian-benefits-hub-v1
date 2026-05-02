@@ -24,7 +24,7 @@
   --bg-card:     rgba(255,255,255,.042);
   --bg-card-hover: rgba(255,255,255,.058);
   --bg-input:    rgba(0,0,0,.38);
-  --sidebar-bg:  #251458;   /* light purple — matches pending-payment card tone */
+  --sidebar-bg:  #1a0d42;   /* slightly darker purple */
   --sidebar-w:   224px;
 
   /* Typography */
@@ -194,17 +194,18 @@ body {
   padding: 9px var(--sp-3);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
-  font-weight: 600;
-  color: rgba(255,255,255,.70);
+  font-weight: 700;
+  color: rgba(255,255,255,.92);
   transition: background .12s, color .12s;
   cursor: pointer;
   border: none;
   background: transparent;
   width: 100%;
   text-align: left;
+  letter-spacing: .1px;
 }
 .sidebarLink:hover {
-  background: rgba(255,255,255,.08);
+  background: rgba(255,255,255,.10);
   color: #fff;
 }
 .sidebarLinkActive {
