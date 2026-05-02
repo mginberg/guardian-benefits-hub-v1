@@ -199,25 +199,27 @@ function SidePanel({ data, accentColor, label, icon }: {
   data: PeriodData; accentColor: string; label: string; icon: string
 }) {
   return (
-    <div style={{ borderRadius: 16, overflow: 'hidden', background: 'rgba(255,255,255,.042)',
-      border: '1px solid rgba(255,255,255,.09)', borderTop: `3px solid ${accentColor}` }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px',
-        borderBottom: '1.5px solid rgba(255,255,255,.07)' }}>
+    <div style={{ borderRadius: 16, overflow: 'hidden',
+      background: 'rgba(255,255,255,.055)', border: `1.5px solid ${accentColor}40` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 22px',
+        background: `linear-gradient(135deg,${accentColor}30,${accentColor}10)`,
+        borderBottom: `1.5px solid ${accentColor}30` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: `${accentColor}26`,
+          <div style={{ width: 40, height: 40, borderRadius: 12,
+            background: `linear-gradient(135deg,${accentColor}60,${accentColor}30)`,
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{icon}</div>
           <div>
-            <div style={{ fontWeight: 800, color: '#fff', fontSize: 18 }}>{label}</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,.35)' }}>{data.start_date} — {data.end_date}</div>
+            <div style={{ fontWeight: 800, color: '#fff', fontSize: 17 }}>{label}</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,.45)' }}>{data.start_date} — {data.end_date}</div>
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontWeight: 900, fontSize: 28, color: accentColor }}>{data.total_deals}</div>
-          <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,.35)' }}>deals</div>
+          <div style={{ fontWeight: 900, fontSize: 30, color: '#fff', textShadow: `0 0 18px ${accentColor}` }}>{data.total_deals}</div>
+          <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,.45)' }}>deals</div>
           {data.total_premium > 0 && <div style={{ fontWeight: 800, fontSize: 13, color: accentColor }}>{fmt$(data.total_premium)}</div>}
         </div>
       </div>
-      <div style={{ padding: 12, maxHeight: 380, overflowY: 'auto' }}>
+      <div style={{ padding: 10, maxHeight: 380, overflowY: 'auto' }}>
         {!data.leaders?.length ? (
           <div style={{ textAlign: 'center', padding: '32px 0', color: 'rgba(255,255,255,.4)' }}>
             <Trophy style={{ width: 48, height: 48, margin: '0 auto 8px', opacity: .3 }} />
@@ -225,9 +227,9 @@ function SidePanel({ data, accentColor, label, icon }: {
           </div>
         ) : data.leaders.map((entry, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, borderRadius: 12, marginBottom: 6,
-            padding: '12px 14px',
-            background: i === 0 ? 'rgba(201,168,76,.08)' : 'rgba(255,255,255,.035)',
-            border: i === 0 ? '1px solid rgba(201,168,76,.15)' : '1px solid transparent' }}>
+            padding: '11px 14px',
+            background: i === 0 ? `${accentColor}22` : 'rgba(255,255,255,.04)',
+            border: i === 0 ? `1px solid ${accentColor}44` : '1px solid transparent' }}>
             <div style={{ width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontWeight: 900, fontSize: 12, flexShrink: 0, ...getSideRankStyle(i + 1) }}>
               {i === 0 ? '👑' : i + 1}
@@ -431,25 +433,25 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
         ))}
       </div>
 
-      {/* Summary KPI cards — purple / green / teal matching dashboard accent style */}
+      {/* Summary KPI cards — solid filled gradients to pop */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 24 }}>
-        <div style={{ borderRadius: 16, padding: '20px 24px', position: 'relative', overflow: 'hidden', color: '#fff',
-          background: 'rgba(139,92,246,.12)', border: '1px solid rgba(255,255,255,.09)', borderTop: '3px solid #8b5cf6' }}>
-          <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 40, opacity: .3 }}>🏆</span>
-          <div style={{ fontWeight: 700, fontSize: 11, color: '#c4b5fd', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6 }}>Total Deals</div>
-          <div style={{ fontWeight: 900, fontSize: 38, lineHeight: 1 }}>{summaryData.total_deals}</div>
+        <div style={{ borderRadius: 16, padding: '22px 26px', position: 'relative', overflow: 'hidden', color: '#fff',
+          background: 'linear-gradient(135deg,#5b21b6,#7c3aed)', boxShadow: '0 6px 28px rgba(124,58,237,.45)' }}>
+          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 44, opacity: .4 }}>🏆</span>
+          <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,.75)', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 8 }}>Total Deals</div>
+          <div style={{ fontWeight: 900, fontSize: 42, lineHeight: 1 }}>{summaryData.total_deals}</div>
         </div>
-        <div style={{ borderRadius: 16, padding: '20px 24px', position: 'relative', overflow: 'hidden', color: '#fff',
-          background: 'rgba(52,211,153,.10)', border: '1px solid rgba(255,255,255,.09)', borderTop: '3px solid #34d399' }}>
-          <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 40, opacity: .3 }}>💰</span>
-          <div style={{ fontWeight: 700, fontSize: 11, color: '#6ee7b7', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6 }}>Total Premium</div>
-          <div style={{ fontWeight: 900, fontSize: 38, lineHeight: 1 }}>{fmt$(summaryData.total_premium)}</div>
+        <div style={{ borderRadius: 16, padding: '22px 26px', position: 'relative', overflow: 'hidden', color: '#fff',
+          background: 'linear-gradient(135deg,#059669,#34d399)', boxShadow: '0 6px 28px rgba(52,211,153,.35)' }}>
+          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 44, opacity: .4 }}>💰</span>
+          <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,.75)', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 8 }}>Total Premium</div>
+          <div style={{ fontWeight: 900, fontSize: 42, lineHeight: 1 }}>{fmt$(summaryData.total_premium)}</div>
         </div>
-        <div style={{ borderRadius: 16, padding: '20px 24px', position: 'relative', overflow: 'hidden', color: '#fff',
-          background: 'rgba(34,211,238,.10)', border: '1px solid rgba(255,255,255,.09)', borderTop: '3px solid #22d3ee' }}>
-          <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 40, opacity: .3 }}>📈</span>
-          <div style={{ fontWeight: 700, fontSize: 11, color: '#67e8f9', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6 }}>Avg Premium</div>
-          <div style={{ fontWeight: 900, fontSize: 38, lineHeight: 1 }}>{fmt$(avgPremium)}</div>
+        <div style={{ borderRadius: 16, padding: '22px 26px', position: 'relative', overflow: 'hidden', color: '#fff',
+          background: 'linear-gradient(135deg,#0e7490,#22d3ee)', boxShadow: '0 6px 28px rgba(34,211,238,.3)' }}>
+          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 44, opacity: .4 }}>📈</span>
+          <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,.75)', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 8 }}>Avg Premium</div>
+          <div style={{ fontWeight: 900, fontSize: 42, lineHeight: 1 }}>{fmt$(avgPremium)}</div>
         </div>
       </div>
 
