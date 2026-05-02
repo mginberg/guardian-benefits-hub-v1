@@ -1,22 +1,22 @@
 /*
  * Guardian Benefits Hub — Design System
- * Brand: Navy #1a3058 · Gold #c9a84c · Font: Geist
- * Dark app shell with branded navy sidebar.
+ * Brand: Deep Purple #0d0920 · Purple #7c3aed · Font: Geist
+ * Dark app shell with branded purple sidebar.
  * ALL design tokens live here. Never use magic numbers in component styles.
  */
 
 /* ─── Brand tokens ─────────────────────────────────────────────────────────── */
 :root {
   /* Brand */
-  --navy:        #1a3058;
-  --navy-deep:   #142748;
-  --navy-light:  #243f6e;
-  --navy-mid:    #1e3a6a;
-  --gold:        #c9a84c;
-  --gold-dark:   #b8923b;
-  --gold-bright: #ddb84d;
-  --gold-bg:     rgba(201,168,76,.10);
-  --gold-border: rgba(201,168,76,.28);
+  --navy:        #1a0d42;
+  --navy-deep:   #120930;
+  --navy-light:  #2d1a5e;
+  --navy-mid:    #1f1050;
+  --gold:        #8b5cf6;
+  --gold-dark:   #7c3aed;
+  --gold-bright: #a78bfa;
+  --gold-bg:     rgba(139,92,246,.10);
+  --gold-border: rgba(139,92,246,.28);
 
   /* App shell */
   --bg-app:      #0d0920;

@@ -152,7 +152,7 @@ function TierUpCelebration({ event, onDone }: { event: TierUpEvent; onDone: () =
     const a = (i / 16) * 360 * (Math.PI / 180)
     const d = 80 + Math.random() * 100
     return { x: Math.cos(a) * d, y: Math.sin(a) * d, size: 4 + Math.random() * 6,
-      color: ['#c9a84c','#3b82f6','#f97316','#06b6d4','#a78bfa','#f472b6','#22d3ee','#fbbf24'][i % 8],
+      color: ['#8b5cf6','#3b82f6','#f97316','#06b6d4','#a78bfa','#f472b6','#22d3ee','#fbbf24'][i % 8],
       delay: Math.random() * 0.4 }
   })
   return (
@@ -165,7 +165,7 @@ function TierUpCelebration({ event, onDone }: { event: TierUpEvent; onDone: () =
         boxShadow: `0 0 60px ${milestone.glow.match(/rgba\([^)]+\)/)?.[0] || 'rgba(201,168,76,.3)'},0 24px 48px rgba(0,0,0,.5)` }}>
         {[0,.3,.6].map((d, i) => (
           <div key={i} className="tierup-ring" style={{ width: 120, height: 120, top: '50%', left: '50%', marginTop: -60, marginLeft: -60,
-            color: milestone.glow.match(/rgba\([^)]+\)/)?.[0] || '#c9a84c', animationDelay: `${d}s`, opacity: 0 }} />
+            color: milestone.glow.match(/rgba\([^)]+\)/)?.[0] || '#8b5cf6', animationDelay: `${d}s`, opacity: 0 }} />
         ))}
         {particles.map((p, i) => (
           <div key={i} className="tierup-particle" style={{ width: p.size, height: p.size, background: p.color,
@@ -325,7 +325,7 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
   if (loading && !data) return (
     <div style={{ minHeight: '100vh', background: '#0d0920', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
-        <RefreshCw style={{ width: 48, height: 48, color: '#c9a84c', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+        <RefreshCw style={{ width: 48, height: 48, color: '#a78bfa', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
         <p style={{ color: 'rgba(255,255,255,.6)', fontSize: 18 }}>Loading leaderboard…</p>
       </div>
     </div>
@@ -336,7 +336,7 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
       <div style={{ textAlign: 'center' }}>
         <AlertCircle style={{ width: 48, height: 48, color: '#f87171', margin: '0 auto 16px' }} />
         <p style={{ color: '#f87171', fontSize: 18, marginBottom: 16 }}>{error}</p>
-        <button onClick={fetch} style={{ padding: '10px 24px', borderRadius: 12, background: 'rgba(201,168,76,.15)', border: '1.5px solid rgba(201,168,76,.3)', color: '#ddb84d', fontWeight: 700, cursor: 'pointer' }}>Retry</button>
+        <button onClick={fetch} style={{ padding: '10px 24px', borderRadius: 12, background: 'rgba(139,92,246,.15)', border: '1.5px solid rgba(139,92,246,.3)', color: '#a78bfa', fontWeight: 700, cursor: 'pointer' }}>Retry</button>
       </div>
     </div>
   )
@@ -353,9 +353,9 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
     : breakdownPeriod === 'monthly' ? data.monthly_breakdown : data.daily_breakdown
 
   const stateBarColors = ['linear-gradient(90deg,#3b82f6,#60a5fa)','linear-gradient(90deg,#06b6d4,#22d3ee)','linear-gradient(90deg,#8b5cf6,#a78bfa)','linear-gradient(90deg,#14b8a6,#5eead4)','linear-gradient(90deg,#f97316,#fb923c)']
-  const planBarColors  = ['linear-gradient(90deg,#c9a84c,#ddb84d)','linear-gradient(90deg,#3b82f6,#60a5fa)','linear-gradient(90deg,#dc2626,#f87171)','linear-gradient(90deg,#059669,#34d399)','linear-gradient(90deg,#d97706,#fbbf24)']
+  const planBarColors  = ['linear-gradient(90deg,#8b5cf6,#a78bfa)','linear-gradient(90deg,#3b82f6,#60a5fa)','linear-gradient(90deg,#dc2626,#f87171)','linear-gradient(90deg,#059669,#34d399)','linear-gradient(90deg,#d97706,#fbbf24)']
   const stateAccents   = ['#3b82f6','#06b6d4','#8b5cf6','#14b8a6','#f97316']
-  const planAccents    = ['#c9a84c','#3b82f6','#dc2626','#059669','#d97706']
+  const planAccents    = ['#a78bfa','#3b82f6','#dc2626','#059669','#d97706']
 
   return (
     <div style={{ minHeight: '100vh', background: '#0d0920', color: '#e4e6eb' }}>
