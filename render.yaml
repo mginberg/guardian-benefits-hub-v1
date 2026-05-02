@@ -49,11 +49,9 @@ services:
       - key: SFTP_PASSWORD
         sync: false
       - key: SFTP_REMOTE_DIR
-        sync: false
+        value: /
       - key: SFTP_FILE_PATTERN
-        sync: false
-
-  - type: worker
+        value: GuardianBenefits_Policy_
     name: guardian-benefits-hub-v1-worker
     env: docker
     plan: starter
@@ -88,9 +86,9 @@ services:
       - key: SFTP_PASSWORD
         sync: false
       - key: SFTP_REMOTE_DIR
-        sync: false
+        value: /
       - key: SFTP_FILE_PATTERN
-        sync: false
+        value: GuardianBenefits_Policy_
       # Cron schedule (UTC). 11:00 UTC = 7:00 AM ET
       - key: UNL_IMPORT_CRON_HOUR
         value: "11"
