@@ -132,8 +132,44 @@ class PolicyReport(Base):
     )
 
 
-class UnroutedPolicyRow(Base):
-    __tablename__ = "unrouted_policy_rows"
+class LeaderboardContact(Base):
+    """One row per GHL contact (= one deal submission). Upserted on webhook or cron sync."""
+    __tablename__ = "leaderboard_contacts"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=new_id)
+    agency_id: Mapped[str] = mapped_column(String, ForeignKey("agencies.id"), index=True)
+    ghl_location_id: Mapped[str] = mapped_column(String, default="", index=True)
+    ghl_contact_id: Mapped[str] = mapped_column(String, default="", index=True)
+
+    # Denormalised leaderboard fields
+    agent_name: Mapped[str] = mapped_column(String, default="", index=True)
+    premium: Mapped[float] = mapped_column(Float, default=0.0)
+    plan_name: Mapped[str] = mapped_column(String, default="")
+    issue_state: Mapped[str] = mapped_column(String, default="")
+
+    # Contact info
+    contact_first_name: Mapped[str] = mapped_column(String, default="")
+    contact_last_name: Mapped[str] = mapped_column(String, default="")
+
+    # GHL creation timestamp — this is what filters today/week/month
+    ghl_date_added: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+
+    # Source tracking: webhook | ghl_sync | deal_submission
+    source: Mapped[str] = mapped_column(String, default="ghl_sync")
+
+    last_synced_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+    agency = relationship("Agency")
+
+    __table_args__ = (
+        UniqueConstraint("ghl_location_id", "ghl_contact_id", name="uq_lb_contact_location_ghl"),
+        Index("ix_lb_contact_agency_date", "agency_id", "ghl_date_added"),
+    )
+
+
+class UnroutedPolicyRow(Base):    __tablename__ = "unrouted_policy_rows"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=new_id)
     source_file: Mapped[str] = mapped_column(String, default="", index=True)

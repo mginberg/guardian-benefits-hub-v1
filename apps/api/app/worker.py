@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 import uuid
@@ -7,6 +8,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from app.config import settings
 from app.db import SessionLocal
 from app.db_init import init_db
+from app.ghl_sync import sync_all_agencies
 from app.jobs import get_job, mark_job_failed, mark_job_running, mark_job_succeeded, parse_job_params
 from app.models import JobStatus
 from app.queue import dequeue_job
@@ -28,6 +30,18 @@ def _unl_import_latest():
         logger.info("UNL import result: %s", result)
     except Exception as exc:
         logger.exception("UNL import failed: %s", exc)
+    finally:
+        db.close()
+
+
+def _ghl_sync_all():
+    """Sync GHL contacts for all agencies — runs every 30 min."""
+    db = SessionLocal()
+    try:
+        result = asyncio.run(sync_all_agencies(db))
+        logger.info("GHL sync result: %s", result)
+    except Exception as exc:
+        logger.exception("GHL sync failed: %s", exc)
     finally:
         db.close()
 
@@ -85,6 +99,14 @@ def main() -> None:
         hour=settings.unl_import_cron_hour,
         minute=settings.unl_import_cron_minute,
         id="unl_import_latest",
+    )
+
+    # GHL leaderboard sync (every 30 min). Skips agencies without GHL credentials.
+    scheduler.add_job(
+        _ghl_sync_all,
+        "interval",
+        minutes=settings.ghl_sync_interval_minutes,
+        id="ghl_sync_all",
     )
     scheduler.start()
 

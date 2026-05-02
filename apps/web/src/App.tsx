@@ -5,6 +5,7 @@ import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { AgenciesPage } from './pages/AgenciesPage'
 import { LeaderboardPage } from './pages/LeaderboardPage'
+import { LeaderboardIndexPage } from './pages/LeaderboardIndexPage'
 import { PolicyBookPage } from './pages/PolicyBookPage'
 
 type Me = {
@@ -210,6 +211,18 @@ export function App() {
       />
       <Route
         path="/leaderboard"
+        element={
+          me ? (
+            <Shell me={me} onLogout={logout} pageTitle="Leaderboard">
+              <LeaderboardIndexPage token={token} />
+            </Shell>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/leaderboard/:agencySlug"
         element={
           me ? (
             <Shell me={me} onLogout={logout} pageTitle="Leaderboard">

@@ -1,162 +1,296 @@
 from __future__ import annotations
 
-from datetime import date, datetime
-from typing import Optional
+import logging
+from datetime import date, datetime, timedelta, timezone
+from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.auth import AuthContext, require_role
+from app.config import settings
 from app.db import get_db
-from app.models import Agency, ImportRun, ImportRunStatus, PolicyReport
+from app.ghl_sync import sync_agency, sync_all_agencies, upsert_from_webhook
+from app.models import Agency, LeaderboardContact
 
+log = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/leaderboard", tags=["leaderboard"])
 
-# Classifications that count as "active"
-_ACTIVE = ("active",)
-# Classifications that count as "cancelled / terminated"
-_CANCELLED = ("terminated", "lapsed")
-# Classifications that count as "pending" pipeline
-_PENDING = ("pending_new", "pending_payment", "pending_cancel", "future_effective")
-# Used for effectuation-rate denominator (definitive = total minus pending/suspended)
-_EXCL_DENOM = ("pending_new", "pending_payment", "pending_cancel", "future_effective", "suspended")
+
+# ── date window helpers ────────────────────────────────────────────────────
+
+def _utc_today() -> date:
+    return datetime.now(timezone.utc).date()
 
 
-def _safe_date(s: str | None) -> date | None:
-    if not s:
-        return None
-    try:
-        return date.fromisoformat(s)
-    except ValueError:
-        return None
-
-
-@router.get("")
-def get_leaderboard(
-    agency_id: Optional[str] = Query(None),
-    date_from: Optional[str] = Query(None),
-    date_to: Optional[str] = Query(None),
-    metric: str = Query("premium"),   # premium | active | total
-    limit: int = Query(25, ge=1, le=100),
-    db: Session = Depends(get_db),
-    ctx: AuthContext = Depends(require_role("super_admin", "admin", "agent")),
-):
-    df = _safe_date(date_from)
-    dt = _safe_date(date_to)
-
-    # ── Scope ────────────────────────────────────────────────────────────────
-    if ctx.role == "super_admin":
-        if agency_id:
-            agency_ids = [agency_id]
+def _window(period: str) -> tuple[datetime, datetime]:
+    today = _utc_today()
+    if period == "daily":
+        start = datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
+        end = start + timedelta(days=1)
+    elif period == "weekly":
+        monday = today - timedelta(days=today.weekday())
+        start = datetime(monday.year, monday.month, monday.day, tzinfo=timezone.utc)
+        end = start + timedelta(days=7)
+    elif period == "monthly":
+        start = datetime(today.year, today.month, 1, tzinfo=timezone.utc)
+        # First day of next month
+        if today.month == 12:
+            end = datetime(today.year + 1, 1, 1, tzinfo=timezone.utc)
         else:
-            rows = db.execute(select(Agency.id).where(Agency.is_active == True)).scalars().all()  # noqa: E712
-            agency_ids = list(rows)
+            end = datetime(today.year, today.month + 1, 1, tzinfo=timezone.utc)
     else:
-        agency_ids = [ctx.agency_id]
+        raise ValueError(f"Unknown period: {period}")
+    return start, end
 
-    if not agency_ids:
-        return {"agents": [], "last_sync": None, "agency_list": []}
 
-    # ── Base filter predicates ────────────────────────────────────────────────
-    preds = [PolicyReport.agency_id.in_(agency_ids)]
-    if df:
-        preds.append(PolicyReport.issue_date >= df)
-    if dt:
-        preds.append(PolicyReport.issue_date <= dt)
+def _fmt_date(d: date) -> str:
+    return d.strftime("%b %d")
 
-    # ── Aggregate per agent ───────────────────────────────────────────────────
-    total_col        = func.count(PolicyReport.id).label("total")
-    active_col       = func.sum(case((PolicyReport.classification.in_(_ACTIVE), 1), else_=0)).label("active")
-    premium_col      = func.coalesce(
-        func.sum(case((PolicyReport.classification.in_(_ACTIVE), PolicyReport.annual_premium), else_=0)), 0
-    ).label("active_premium")
-    cancelled_col    = func.sum(case((PolicyReport.classification.in_(_CANCELLED), 1), else_=0)).label("cancelled")
-    pending_col      = func.sum(case((PolicyReport.classification.in_(_PENDING), 1), else_=0)).label("pending")
-    definitive_col   = func.sum(case((PolicyReport.classification.not_in(_EXCL_DENOM), 1), else_=0)).label("definitive")
-    agency_name_col  = func.min(Agency.name).label("agency_name")
 
-    stmt = (
-        select(
-            PolicyReport.wa_code,
-            PolicyReport.agent_name,
-            PolicyReport.agency_id,
-            agency_name_col,
-            total_col,
-            active_col,
-            premium_col,
-            cancelled_col,
-            pending_col,
-            definitive_col,
+# ── aggregation ────────────────────────────────────────────────────────────
+
+def _build_period_data(
+    db: Session,
+    agency_ids: list[str],
+    period: str,
+) -> dict[str, Any]:
+    start, end = _window(period)
+    today = _utc_today()
+
+    # Period display strings
+    if period == "daily":
+        period_label = today.strftime("%B %d, %Y")
+        start_str = end_str = period_label
+    elif period == "weekly":
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+        start_str = _fmt_date(week_start)
+        end_str = _fmt_date(week_end)
+        period_label = f"{start_str} — {end_str}"
+    else:  # monthly
+        start_str = today.strftime("%b 1")
+        end_str = today.strftime("%b") + " " + str(
+            (datetime(today.year, today.month + 1, 1, tzinfo=timezone.utc) - timedelta(days=1)).day
+            if today.month < 12
+            else 31
         )
-        .join(Agency, Agency.id == PolicyReport.agency_id)
+        period_label = today.strftime("%B %Y")
+
+    preds = [
+        LeaderboardContact.agency_id.in_(agency_ids),
+        LeaderboardContact.ghl_date_added >= start,
+        LeaderboardContact.ghl_date_added < end,
+    ]
+
+    # Leaders: group by agent_name, count deals, sum premium
+    rows = db.execute(
+        select(
+            LeaderboardContact.agent_name,
+            func.count(LeaderboardContact.id).label("deals"),
+            func.coalesce(func.sum(LeaderboardContact.premium), 0).label("premium"),
+        )
         .where(*preds)
-        .group_by(PolicyReport.wa_code, PolicyReport.agent_name, PolicyReport.agency_id)
-    )
+        .group_by(LeaderboardContact.agent_name)
+        .order_by(func.coalesce(func.sum(LeaderboardContact.premium), 0).desc(),
+                  func.count(LeaderboardContact.id).desc(),
+                  LeaderboardContact.agent_name)
+    ).all()
 
-    rows = db.execute(stmt).all()
+    leaders = [
+        {"name": r.agent_name or "Unknown", "deals": r.deals, "premium": float(r.premium)}
+        for r in rows
+    ]
+    total_deals = sum(l["deals"] for l in leaders)
+    total_premium = sum(l["premium"] for l in leaders)
 
-    # ── Build + rank ──────────────────────────────────────────────────────────
-    agents = []
-    for r in rows:
-        total     = r.total or 0
-        active    = r.active or 0
-        premium   = float(r.active_premium or 0)
-        cancelled = r.cancelled or 0
-        definitive = max(r.definitive or 0, 1)
+    # Breakdown: by state
+    state_rows = db.execute(
+        select(
+            LeaderboardContact.issue_state,
+            func.count(LeaderboardContact.id).label("count"),
+            func.coalesce(func.sum(LeaderboardContact.premium), 0).label("premium"),
+        )
+        .where(*preds, LeaderboardContact.issue_state != "")
+        .group_by(LeaderboardContact.issue_state)
+        .order_by(func.count(LeaderboardContact.id).desc())
+        .limit(20)
+    ).all()
 
-        eff_rate    = round((active / definitive) * 100, 1)
-        cancel_rate = round((cancelled / definitive) * 100, 1)
-
-        agents.append({
-            "wa_code":       r.wa_code or "—",
-            "agent_name":    r.agent_name or "—",
-            "agency_id":     r.agency_id,
-            "agency_name":   r.agency_name or "—",
-            "total":         total,
-            "active":        active,
-            "active_premium": premium,
-            "cancelled":     cancelled,
-            "pending":       r.pending or 0,
-            "effectuation_rate": eff_rate,
-            "cancel_rate":   cancel_rate,
-        })
-
-    # Sort by chosen metric
-    sort_key = {
-        "premium": lambda a: a["active_premium"],
-        "active":  lambda a: a["active"],
-        "total":   lambda a: a["total"],
-    }.get(metric, lambda a: a["active_premium"])
-
-    agents.sort(key=sort_key, reverse=True)
-    agents = agents[:limit]
-
-    # Add rank
-    for i, a in enumerate(agents):
-        a["rank"] = i + 1
-
-    # ── Last sync ─────────────────────────────────────────────────────────────
-    last_run = db.execute(
-        select(ImportRun.finished_at, ImportRun.source_file)
-        .where(ImportRun.status == ImportRunStatus.succeeded)
-        .order_by(ImportRun.finished_at.desc())
-        .limit(1)
-    ).first()
-    last_sync = last_run.finished_at.isoformat() if last_run and last_run.finished_at else None
-    last_file = last_run.source_file if last_run else None
-
-    # ── Agency list for filter ────────────────────────────────────────────────
-    agency_list = db.execute(
-        select(Agency.id, Agency.name)
-        .where(Agency.is_active == True)  # noqa: E712
-        .order_by(Agency.name)
+    # Breakdown: by plan type
+    plan_rows = db.execute(
+        select(
+            LeaderboardContact.plan_name,
+            func.count(LeaderboardContact.id).label("count"),
+            func.coalesce(func.sum(LeaderboardContact.premium), 0).label("premium"),
+        )
+        .where(*preds, LeaderboardContact.plan_name != "")
+        .group_by(LeaderboardContact.plan_name)
+        .order_by(func.count(LeaderboardContact.id).desc())
+        .limit(20)
     ).all()
 
     return {
-        "agents":      agents,
-        "last_sync":   last_sync,
-        "last_file":   last_file,
-        "agency_list": [{"id": a.id, "name": a.name} for a in agency_list],
-        "scope_agency_ids": agency_ids,
+        "period": period,
+        "start_date": start_str,
+        "end_date": end_str,
+        "period_label": period_label,
+        "leaders": leaders,
+        "total_deals": total_deals,
+        "total_premium": total_premium,
+        "breakdown": {
+            "states": [
+                {"label": r.issue_state, "count": r.count, "premium": float(r.premium)}
+                for r in state_rows
+            ],
+            "plan_types": [
+                {"label": r.plan_name, "count": r.count, "premium": float(r.premium)}
+                for r in plan_rows
+            ],
+        },
     }
+
+
+# ── main leaderboard endpoint ──────────────────────────────────────────────
+
+@router.get("/{agency_slug}")
+def get_leaderboard_by_slug(
+    agency_slug: str,
+    db: Session = Depends(get_db),
+):
+    """Public-facing leaderboard — no auth required (agents share the URL)."""
+    if agency_slug == "all":
+        agencies = db.execute(
+            select(Agency).where(Agency.is_active == True)  # noqa: E712
+        ).scalars().all()
+        agency_ids = [a.id for a in agencies]
+        agency_name = "All Agencies"
+        primary_slug = "all"
+    else:
+        agency = db.execute(
+            select(Agency).where(Agency.slug == agency_slug)
+        ).scalar_one_or_none()
+        if not agency:
+            raise HTTPException(status_code=404, detail="Agency not found")
+        agency_ids = [agency.id]
+        agency_name = agency.name
+        primary_slug = agency.slug
+
+    if not agency_ids:
+        raise HTTPException(status_code=404, detail="No agencies found")
+
+    daily = _build_period_data(db, agency_ids, "daily")
+    weekly = _build_period_data(db, agency_ids, "weekly")
+    monthly = _build_period_data(db, agency_ids, "monthly")
+
+    # Last sync time
+    last_row = db.execute(
+        select(LeaderboardContact.last_synced_at)
+        .where(LeaderboardContact.agency_id.in_(agency_ids))
+        .order_by(LeaderboardContact.last_synced_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    last_sync = last_row.isoformat() if last_row else None
+
+    return {
+        "agency_slug": primary_slug,
+        "agency_name": agency_name,
+        "daily": daily,
+        "weekly": weekly,
+        "monthly": monthly,
+        "daily_breakdown": daily["breakdown"],
+        "weekly_breakdown": weekly["breakdown"],
+        "monthly_breakdown": monthly["breakdown"],
+        "last_sync": last_sync,
+    }
+
+
+@router.get("")
+def list_agencies_for_leaderboard(db: Session = Depends(get_db)):
+    """Returns list of active agencies for the index page."""
+    agencies = db.execute(
+        select(Agency).where(Agency.is_active == True)  # noqa: E712
+        .order_by(Agency.name)
+    ).scalars().all()
+    return [{"slug": a.slug, "name": a.name, "code": a.unl_prefix} for a in agencies]
+
+
+# ── webhook (instant sync) ─────────────────────────────────────────────────
+
+@router.post("/webhook/{agency_slug}")
+async def ghl_webhook(
+    agency_slug: str,
+    payload: dict,
+    token: Optional[str] = Query(None),
+    x_ghl_signature: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    """GHL workflow webhook — called instantly when a contact is created.
+
+    Set up in GHL: Workflows → Action → Webhook → POST https://your-api.com/api/leaderboard/webhook/{agency_slug}?token={GHL_WEBHOOK_TOKEN}
+    """
+    # Token check if configured
+    if settings.ghl_webhook_token:
+        if token != settings.ghl_webhook_token:
+            raise HTTPException(status_code=401, detail="Invalid webhook token")
+
+    agency = db.execute(
+        select(Agency).where(Agency.slug == agency_slug)
+    ).scalar_one_or_none()
+    if not agency:
+        raise HTTPException(status_code=404, detail="Agency not found")
+
+    # GHL webhook payloads vary — normalize
+    contact = (
+        payload.get("contact")
+        or payload.get("data")
+        or payload
+    )
+
+    contact_id = str(
+        contact.get("id")
+        or contact.get("contactId")
+        or contact.get("contact_id")
+        or ""
+    )
+    if not contact_id:
+        return {"ok": True, "msg": "no contact id — ignored"}
+
+    try:
+        row = upsert_from_webhook(db, agency=agency, contact=contact)
+        log.info("Webhook: upserted %s for %s", contact_id, agency_slug)
+        return {"ok": True, "contact_id": row.ghl_contact_id, "agent": row.agent_name}
+    except Exception as e:
+        log.exception("Webhook upsert failed for %s: %s", agency_slug, e)
+        raise HTTPException(status_code=500, detail="Internal error processing webhook")
+
+
+# ── admin sync endpoints ───────────────────────────────────────────────────
+
+@router.post("/sync/{agency_slug}")
+async def manual_sync(
+    agency_slug: str,
+    full: bool = Query(False),
+    db: Session = Depends(get_db),
+    ctx: AuthContext = Depends(require_role("super_admin")),
+):
+    """Super-admin: trigger immediate GHL sync for one agency."""
+    agency = db.execute(
+        select(Agency).where(Agency.slug == agency_slug)
+    ).scalar_one_or_none()
+    if not agency:
+        raise HTTPException(status_code=404, detail="Agency not found")
+
+    result = await sync_agency(db, agency, full=full)
+    return {"ok": True, "agency": agency_slug, **result}
+
+
+@router.post("/sync-all")
+async def sync_all(
+    db: Session = Depends(get_db),
+    ctx: AuthContext = Depends(require_role("super_admin")),
+):
+    """Super-admin: trigger immediate GHL sync for all agencies."""
+    result = await sync_all_agencies(db)
+    return {"ok": True, "results": result}
