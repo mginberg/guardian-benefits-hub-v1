@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.config import settings
 from app.db import Base, engine, SessionLocal
@@ -7,8 +7,26 @@ from app.models import Agency, User, Role
 from app.security import hash_password
 
 
+def _run_migrations() -> None:
+    """Idempotent ALTER TABLE migrations for columns added after initial deploy.
+
+    PostgreSQL's ADD COLUMN IF NOT EXISTS is safe to run on every startup.
+    """
+    with engine.connect() as conn:
+        # ── agencies: GHL custom field ID columns (added for leaderboard sync) ──
+        conn.execute(text("""
+            ALTER TABLE agencies
+                ADD COLUMN IF NOT EXISTS ghl_agent_field_id  VARCHAR  NOT NULL DEFAULT '',
+                ADD COLUMN IF NOT EXISTS ghl_premium_field_id VARCHAR NOT NULL DEFAULT '',
+                ADD COLUMN IF NOT EXISTS ghl_plan_field_id   VARCHAR  NOT NULL DEFAULT '',
+                ADD COLUMN IF NOT EXISTS ghl_field_map       TEXT     NOT NULL DEFAULT '{}'
+        """))
+        conn.commit()
+
+
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
+    _run_migrations()
 
     db = SessionLocal()
     try:
