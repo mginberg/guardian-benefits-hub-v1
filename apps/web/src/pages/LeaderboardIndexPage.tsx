@@ -40,8 +40,8 @@ export function LeaderboardIndexPage() {
       <div style={{ position: 'absolute', top: 20, right: 24 }}>
         <Link to={isLoggedIn ? '/' : '/login'}
           style={{ padding: '9px 20px', borderRadius: 12, fontWeight: 700, fontSize: 14,
-            background: 'linear-gradient(135deg,#c9a84c,#a88a35)', color: '#142748', textDecoration: 'none',
-            boxShadow: '0 4px 16px rgba(201,168,76,.35)' }}>
+            background: 'linear-gradient(135deg,#7c3aed,#5b21b6)', color: '#fff', textDecoration: 'none',
+            boxShadow: '0 4px 16px rgba(139,92,246,.35)' }}>
           {isLoggedIn ? 'Portal' : 'Login'}
         </Link>
       </div>

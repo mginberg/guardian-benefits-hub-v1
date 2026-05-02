@@ -19,7 +19,7 @@ const getInitials = (name: string) => {
 
 const getAvatarGradient = (name: string) => {
   const colors = [
-    'linear-gradient(135deg,#c9a84c,#e6c55a)',
+    'linear-gradient(135deg,#7c3aed,#a78bfa)',
     'linear-gradient(135deg,#0d9488,#14b8a6)',
     'linear-gradient(135deg,#3b82f6,#60a5fa)',
     'linear-gradient(135deg,#8b5cf6,#a78bfa)',
@@ -34,21 +34,21 @@ const getAvatarGradient = (name: string) => {
 }
 
 const getRankStyle = (rank: number): React.CSSProperties => {
-  if (rank === 1) return { background: 'linear-gradient(135deg,#c9a84c,#ddb84d)', color: '#142748', boxShadow: '0 3px 12px rgba(201,168,76,0.5)' }
+  if (rank === 1) return { background: 'linear-gradient(135deg,#7c3aed,#a78bfa)', color: '#fff', boxShadow: '0 3px 12px rgba(139,92,246,0.5)' }
   if (rank === 2) return { background: 'linear-gradient(135deg,#38bdf8,#60a5fa)', color: '#0c2d4a', boxShadow: '0 3px 10px rgba(56,189,248,0.35)' }
   if (rank === 3) return { background: 'linear-gradient(135deg,#f97316,#fb923c)', color: '#fff', boxShadow: '0 3px 10px rgba(249,115,22,0.35)' }
   return { background: 'linear-gradient(135deg,#a78bfa,#c4b5fd)', color: '#2e1065', boxShadow: '0 2px 8px rgba(167,139,250,0.3)' }
 }
 
 const getSideRankStyle = (rank: number): React.CSSProperties => {
-  if (rank === 1) return { background: 'linear-gradient(135deg,#c9a84c,#ddb84d)', color: '#142748' }
+  if (rank === 1) return { background: 'linear-gradient(135deg,#7c3aed,#a78bfa)', color: '#fff' }
   if (rank === 2) return { background: 'linear-gradient(135deg,#38bdf8,#60a5fa)', color: '#0c2d4a' }
   if (rank === 3) return { background: 'linear-gradient(135deg,#f97316,#fb923c)', color: '#fff' }
   return { background: 'linear-gradient(135deg,#a78bfa,#c4b5fd)', color: '#2e1065' }
 }
 
 const getBarFill = (rank: number) => {
-  if (rank === 1) return 'linear-gradient(90deg,#c9a84c,#ddb84d)'
+  if (rank === 1) return 'linear-gradient(90deg,#7c3aed,#a78bfa)'
   if (rank === 2) return 'linear-gradient(90deg,#14b8a6,#5eead4)'
   if (rank === 3) return 'linear-gradient(90deg,#3b82f6,#60a5fa)'
   return 'linear-gradient(90deg,#8b5cf6,#a78bfa)'
@@ -78,7 +78,7 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
     @keyframes lb-flame   { 0%,100%{transform:scale(1) rotate(0deg)} 25%{transform:scale(1.15) rotate(-3deg)} 75%{transform:scale(1.2) rotate(-2deg)} }
     @keyframes lb-zap     { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.7;transform:scale(1.15)} }
     @keyframes lb-star    { 0%,100%{opacity:1;transform:rotate(0deg)} 50%{opacity:.7;transform:rotate(15deg)} }
-    @keyframes lb-glow    { 0%,100%{box-shadow:0 0 8px rgba(201,168,76,.3)} 50%{box-shadow:0 0 20px rgba(201,168,76,.6)} }
+    @keyframes lb-glow    { 0%,100%{box-shadow:0 0 8px rgba(139,92,246,.3)} 50%{box-shadow:0 0 20px rgba(139,92,246,.6)} }
     @keyframes lb-float   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
     @keyframes lb-rainbow { 0%{filter:hue-rotate(0deg) brightness(1.1)} 50%{filter:hue-rotate(90deg) brightness(1.3)} 100%{filter:hue-rotate(0deg) brightness(1.1)} }
     @keyframes lb-pop-in  { 0%{opacity:0;transform:scale(0.5) translateY(4px)} 30%{opacity:1;transform:scale(1.1) translateY(-2px)} 100%{opacity:1;transform:scale(1) translateY(0)} }
@@ -108,8 +108,8 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
 
 /* ─── Milestone tiers ─── */
 const MILESTONES = [
-  { min: 20, emoji: '🏆', label: 'GOAT',      anim: 'lb-rainbow', bg: 'rgba(201,168,76,.20)', glow: '0 0 12px rgba(201,168,76,.5)' },
-  { min: 15, emoji: '👑', label: 'Legend',     anim: 'lb-glow',    bg: 'rgba(201,168,76,.16)', glow: '0 0 10px rgba(201,168,76,.4)' },
+  { min: 20, emoji: '🏆', label: 'GOAT',      anim: 'lb-rainbow', bg: 'rgba(139,92,246,.20)', glow: '0 0 12px rgba(139,92,246,.5)' },
+  { min: 15, emoji: '👑', label: 'Legend',     anim: 'lb-glow',    bg: 'rgba(139,92,246,.16)', glow: '0 0 10px rgba(139,92,246,.4)' },
   { min: 10, emoji: '🚀', label: 'Rocket',     anim: 'lb-float',   bg: 'rgba(99,102,241,.16)', glow: '0 0 10px rgba(99,102,241,.4)' },
   { min: 7,  emoji: '💎', label: 'Diamond',    anim: 'lb-star',    bg: 'rgba(6,182,212,.16)',  glow: '0 0 8px rgba(6,182,212,.4)' },
   { min: 5,  emoji: '🔥', label: 'On Fire',    anim: 'lb-flame',   bg: 'rgba(249,115,22,.16)', glow: '0 0 8px rgba(249,115,22,.4)' },
@@ -367,27 +367,20 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
         background: 'linear-gradient(135deg,#1a0d42,#120930,#1a0d42)',
         borderBottom: '3px solid rgba(201,168,76,.4)', boxShadow: '0 4px 24px rgba(0,0,0,.5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 50, height: 50, borderRadius: 12, background: 'linear-gradient(135deg,#c9a84c,#a88a35)',
-            boxShadow: '0 4px 20px rgba(201,168,76,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 50, height: 50, borderRadius: 12, background: 'linear-gradient(135deg,#7c3aed,#5b21b6)',
+            boxShadow: '0 4px 20px rgba(139,92,246,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Shield style={{ width: 26, height: 26, color: '#fff' }} />
           </div>
           <div>
             <h1 style={{ fontSize: 'clamp(16px,4vw,26px)', fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-.02em' }}>
               {data?.agency_name || agencySlug || 'Leaderboard'}
             </h1>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#c9a84c', letterSpacing: '2px', textTransform: 'uppercase', margin: 0 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#c4b5fd', letterSpacing: '2px', textTransform: 'uppercase', margin: 0 }}>
               Agent Leaderboard
             </p>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          {me?.role === 'super_admin' && (
-            <button onClick={manualSync} disabled={syncing}
-              style={{ padding: '8px 14px', borderRadius: 10, border: '1.5px solid rgba(201,168,76,.3)',
-                background: 'rgba(201,168,76,.12)', color: '#c9a84c', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-              {syncing ? '↻ Syncing…' : '↻ Sync GHL'}
-            </button>
-          )}
           <button onClick={fetch}
             style={{ padding: '8px 10px', borderRadius: 10, border: '1.5px solid rgba(255,255,255,.12)',
               background: 'transparent', color: 'rgba(255,255,255,.5)', cursor: 'pointer' }}>
@@ -401,15 +394,15 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
           {me ? (
             <Link to="/"
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 12, fontWeight: 700, fontSize: 14,
-                background: 'linear-gradient(135deg,#c9a84c,#a88a35)', color: '#142748', textDecoration: 'none',
-                boxShadow: '0 4px 16px rgba(201,168,76,.35)' }}>
+                background: 'linear-gradient(135deg,#7c3aed,#5b21b6)', color: '#fff', textDecoration: 'none',
+                boxShadow: '0 4px 16px rgba(139,92,246,.35)' }}>
               Portal
             </Link>
           ) : (
             <Link to="/login"
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 12, fontWeight: 700, fontSize: 14,
-                background: 'linear-gradient(135deg,#c9a84c,#a88a35)', color: '#142748', textDecoration: 'none',
-                boxShadow: '0 4px 16px rgba(201,168,76,.35)' }}>
+                background: 'linear-gradient(135deg,#7c3aed,#5b21b6)', color: '#fff', textDecoration: 'none',
+                boxShadow: '0 4px 16px rgba(139,92,246,.35)' }}>
               Login
             </Link>
           )}
@@ -424,7 +417,7 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
           <button key={k} onClick={() => setActiveTab(k)}
             style={{ padding: '10px 20px', borderRadius: 12, fontWeight: 700, fontSize: 14, cursor: 'pointer', border: 'none',
               ...(activeTab === k
-                ? { background: 'linear-gradient(135deg,#c9a84c,#a88a35)', color: '#fff', boxShadow: '0 4px 16px rgba(201,168,76,.35)' }
+                ? { background: 'linear-gradient(135deg,#7c3aed,#5b21b6)', color: '#fff', boxShadow: '0 4px 16px rgba(139,92,246,.35)' }
                 : { background: 'rgba(255,255,255,.05)', color: 'rgba(255,255,255,.45)', border: '1.5px solid rgba(255,255,255,.08)' }) }}>
             {k === 'breakdown' && <BarChart3 style={{ width: 14, height: 14, display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />}
             {lbl}
@@ -435,9 +428,9 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
       {/* Summary KPI cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 24 }}>
         <div style={{ borderRadius: 18, padding: '24px 28px', position: 'relative', overflow: 'hidden', color: '#fff',
-          background: 'linear-gradient(135deg,#1a0d42,#2a1560)', border: '2px solid rgba(201,168,76,.4)', boxShadow: '0 6px 24px rgba(201,168,76,.12)' }}>
+          background: 'linear-gradient(135deg,#1a0d42,#2a1560)', border: '2px solid rgba(139,92,246,.4)', boxShadow: '0 6px 24px rgba(139,92,246,.12)' }}>
           <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 48, opacity: .5 }}>🏆</span>
-          <div style={{ fontWeight: 700, fontSize: 14, color: '#c9a84c', letterSpacing: '.05em', marginBottom: 8 }}>Total Deals</div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: '#c4b5fd', letterSpacing: '.05em', marginBottom: 8 }}>Total Deals</div>
           <div style={{ fontWeight: 900, fontSize: 42, lineHeight: 1 }}>{summaryData.total_deals}</div>
         </div>
         <div style={{ borderRadius: 18, padding: '24px 28px', position: 'relative', overflow: 'hidden', color: '#fff',
@@ -475,11 +468,11 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
               ) : daily.leaders.map((entry, i) => {
                 const rank = i + 1
                 const pct = maxPremium > 0 ? (entry.premium / maxPremium) * 100 : 0
-                const rowBg = rank === 1 ? 'linear-gradient(90deg,rgba(201,168,76,.18),rgba(201,168,76,.04))'
+                const rowBg = rank === 1 ? 'linear-gradient(90deg,rgba(139,92,246,.18),rgba(139,92,246,.04))'
                   : rank === 2 ? 'linear-gradient(90deg,rgba(148,163,184,.12),transparent)'
                   : rank === 3 ? 'linear-gradient(90deg,rgba(217,119,6,.12),transparent)'
                   : 'rgba(255,255,255,.025)'
-                const borderLeft = rank === 1 ? '4px solid #c9a84c' : rank === 2 ? '4px solid #94a3b8' : rank === 3 ? '4px solid #d97706' : '4px solid rgba(255,255,255,.08)'
+                const borderLeft = rank === 1 ? '4px solid #8b5cf6' : rank === 2 ? '4px solid #94a3b8' : rank === 3 ? '4px solid #d97706' : '4px solid rgba(255,255,255,.08)'
                 return (
                   <div key={i} className={rank === 1 ? 'lb-glow' : ''} style={{
                     display: 'flex', alignItems: 'center', gap: 16, borderRadius: 16, marginBottom: 12,
@@ -504,13 +497,13 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
                       </div>
                       <div style={{ marginTop: 10, height: 6, borderRadius: 3, background: 'rgba(255,255,255,.08)' }}>
                         <div style={{ height: 6, borderRadius: 3, width: `${pct}%`, background: getBarFill(rank),
-                          boxShadow: rank === 1 ? '0 0 10px rgba(201,168,76,.5)' : 'none', transition: 'width 1s ease' }} />
+                          boxShadow: rank === 1 ? '0 0 10px rgba(139,92,246,.5)' : 'none', transition: 'width 1s ease' }} />
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div style={{ fontWeight: 900, color: '#fff', fontSize: 'clamp(22px,5vw,36px)', lineHeight: 1 }}>{entry.deals}</div>
                       <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '1px', marginTop: 2 }}>deals</div>
-                      {entry.premium > 0 && <div style={{ fontWeight: 800, fontSize: 'clamp(12px,2.5vw,16px)', color: '#c9a84c', marginTop: 2 }}>{fmt$(entry.premium)}</div>}
+                      {entry.premium > 0 && <div style={{ fontWeight: 800, fontSize: 'clamp(12px,2.5vw,16px)', color: '#c4b5fd', marginTop: 2 }}>{fmt$(entry.premium)}</div>}
                     </div>
                   </div>
                 )
@@ -521,7 +514,7 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
           {/* Sidebar: week + month */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <SidePanel data={data.weekly}  accentColor="#22d3ee" label="This Week"  icon="⏱" />
-            <SidePanel data={data.monthly} accentColor="#c9a84c" label="This Month" icon="⭐" />
+            <SidePanel data={data.monthly} accentColor="#a78bfa" label="This Month" icon="⭐" />
           </div>
         </div>
       )}
@@ -535,7 +528,7 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
                 <button key={p} onClick={() => setBreakdownPeriod(p)}
                   style={{ padding: '10px 20px', borderRadius: 12, fontWeight: 700, fontSize: 14, cursor: 'pointer', border: 'none',
                     ...(breakdownPeriod === p
-                      ? { background: 'linear-gradient(135deg,#c9a84c,#a88a35)', color: '#fff', boxShadow: '0 4px 16px rgba(201,168,76,.35)' }
+                      ? { background: 'linear-gradient(135deg,#7c3aed,#5b21b6)', color: '#fff', boxShadow: '0 4px 16px rgba(139,92,246,.35)' }
                       : { background: 'rgba(255,255,255,.05)', color: 'rgba(255,255,255,.45)', border: '1.5px solid rgba(255,255,255,.08)' }) }}>
                   {p === 'daily' ? 'Today' : p === 'weekly' ? 'This Week' : 'This Month'}
                 </button>
@@ -589,8 +582,8 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
               {/* By Plan Type */}
               <div style={{ borderRadius: 20, overflow: 'hidden', background: 'linear-gradient(180deg,rgba(26,13,66,.7),rgba(18,9,48,.5))', border: '1.5px solid rgba(255,255,255,.08)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 28px', borderBottom: '1.5px solid rgba(255,255,255,.08)' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(201,168,76,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Briefcase style={{ width: 20, height: 20, color: '#c9a84c' }} />
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(139,92,246,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Briefcase style={{ width: 20, height: 20, color: '#a78bfa' }} />
                   </div>
                   <h2 style={{ fontWeight: 900, color: '#fff', fontSize: 20, margin: 0 }}>By Plan Type</h2>
                 </div>
@@ -603,7 +596,7 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
                     const accent = planAccents[i % planAccents.length]
                     return (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, borderRadius: 18, marginBottom: 10, padding: '16px 20px',
-                        background: i === 0 ? 'rgba(201,168,76,.06)' : 'rgba(255,255,255,.025)', borderLeft: `4px solid ${accent}`,
+                        background: i === 0 ? 'rgba(139,92,246,.06)' : 'rgba(255,255,255,.025)', borderLeft: `4px solid ${accent}`,
                         transition: 'transform .15s' }}
                         onMouseEnter={e => (e.currentTarget.style.transform = 'translateX(3px)')}
                         onMouseLeave={e => (e.currentTarget.style.transform = 'none')}>
@@ -628,7 +621,7 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
               </div>
             </div>
           ) : (
-            <div style={{ borderRadius: 20, padding: 56, textAlign: 'center', background: 'linear-gradient(180deg,rgba(26,39,68,.7),rgba(22,32,64,.5))', border: '1.5px solid rgba(255,255,255,.08)' }}>
+            <div style={{ borderRadius: 20, padding: 56, textAlign: 'center', background: 'linear-gradient(180deg,rgba(26,13,66,.7),rgba(18,9,48,.5))', border: '1.5px solid rgba(255,255,255,.08)' }}>
               <BarChart3 style={{ width: 80, height: 80, margin: '0 auto 16px', color: 'rgba(255,255,255,.12)' }} />
               <p style={{ fontWeight: 800, fontSize: 20, color: 'rgba(255,255,255,.4)' }}>No breakdown data available yet</p>
             </div>
