@@ -51,6 +51,12 @@ interface Unmatched {
 const fmt$ = (n: number) => '$' + (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 const fmtDt = (s: string) => s ? new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 
+const TRANS_LABELS: Record<string, string> = {
+  '1': 'New Policy', '2': 'Reinstatement',
+  'C': 'Cancel', 'F': 'Flat Cancel', 'I': 'Cancel-Reissue',
+  'O': 'NSF', 'N': 'Stop Pay', 'S': 'Other Bank', 'R': 'Account Closed',
+}
+
 function StatCard({ label, value, sub, accent }: { label: string; value: string | number; sub?: string; accent: string }) {
   const accentMap: Record<string, { bg: string; border: string; color: string }> = {
     purple: { bg: 'rgba(167,139,250,.14)', border: '#a78bfa', color: '#a78bfa' },
@@ -327,7 +333,7 @@ export function CommissionPage({ me }: { me: { role: string; agency_id: string; 
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid rgba(255,255,255,.07)' }}>
-                      {['Policy #', 'Source', 'Agent', 'Insured', 'Premium', 'Advance', 'Status', 'Eff. Date', 'CB Amount'].map(h => (
+                      {['Policy #', 'Source', 'Agent', 'Insured', 'Premium', 'Advance', 'Status', 'Reason / Code', 'Eff. Date', 'CB Amount'].map(h => (
                         <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, fontSize: 11,
                           color: 'rgba(238,241,248,.45)', letterSpacing: '.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
@@ -354,6 +360,18 @@ export function CommissionPage({ me }: { me: { role: string; agency_id: string; 
                             border: `1px solid ${r.status === 'chargeback' ? 'rgba(248,113,113,.3)' : 'rgba(52,211,153,.25)'}` }}>
                             {r.status}
                           </span>
+                        </td>
+                        <td style={{ padding: '10px 14px', fontSize: 12 }}>
+                          {r.plan_status && r.plan_status !== 'Active' ? (
+                            <span style={{ padding: '2px 8px', borderRadius: 6, fontWeight: 700, fontSize: 11,
+                              background: 'rgba(251,146,60,.15)', color: '#fb923c', border: '1px solid rgba(251,146,60,.3)' }}>
+                              {r.plan_status}
+                            </span>
+                          ) : r.trans_type ? (
+                            <span style={{ color: 'rgba(238,241,248,.5)' }}>{TRANS_LABELS[r.trans_type] || r.trans_type}</span>
+                          ) : (
+                            <span style={{ color: 'rgba(238,241,248,.2)' }}>—</span>
+                          )}
                         </td>
                         <td style={{ padding: '10px 14px', color: 'rgba(238,241,248,.5)', fontSize: 12 }}>{r.effective_date || '—'}</td>
                         <td style={{ padding: '10px 14px', color: r.chargeback_amount > 0 ? '#f87171' : 'rgba(238,241,248,.3)', fontWeight: r.chargeback_amount > 0 ? 700 : 400 }}>
