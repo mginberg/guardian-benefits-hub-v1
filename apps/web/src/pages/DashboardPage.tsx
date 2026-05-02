@@ -43,50 +43,20 @@ type DashboardStats = {
   future_effective_count: number
   definitive: number
   agencies: Array<{
-    id: string
-    code: string
-    name: string
-    slug: string
-    total: number
-    active: number
-    pending: number
-    pending_new: number
-    pending_payment: number
-    future_effective: number
-    terminated: number
-    non_effectuated: number
-    pending_cancel: number
-    lapsed: number
-    suspended: number
-    active_premium: number
-    effectuation_rate: number
-    cancel_rate: number
-    non_effectuated_rate: number
+    id: string; code: string; name: string; slug: string
+    total: number; active: number; pending: number
+    pending_new: number; pending_payment: number; future_effective: number
+    terminated: number; non_effectuated: number; pending_cancel: number
+    lapsed: number; suspended: number; active_premium: number
+    effectuation_rate: number; cancel_rate: number; non_effectuated_rate: number
   }>
   agents: Array<{
-    agent_name: string
-    wa_code: string
-    agency_code: string
-    agency_name: string
-    total: number
-    active: number
-    pending: number
-    terminated: number
-    non_effectuated: number
-    pending_cancel: number
-    lapsed: number
-    suspended: number
-    active_premium: number
-    effectuation_rate: number
-    cancel_rate: number
-    non_effectuated_rate: number
+    agent_name: string; wa_code: string; agency_code: string; agency_name: string
+    total: number; active: number; pending: number; terminated: number
+    non_effectuated: number; pending_cancel: number; lapsed: number; suspended: number
+    active_premium: number; effectuation_rate: number; cancel_rate: number; non_effectuated_rate: number
   }>
-  monthly_trend: Array<{
-    month: string
-    month_full: string
-    total: number
-    active: number
-  }>
+  monthly_trend: Array<{ month: string; month_full: string; total: number; active: number }>
   states: Record<string, number>
   reinstatement?: { count: number; pool: number; rate: number }
   last_import_at?: string | null
@@ -97,94 +67,119 @@ type DashboardStats = {
 type Extras = {
   reason_breakdown?: Array<{ code: string; label: string; count: number }>
   product_mix?: Array<{
-    plan_code: string
-    plan_name: string
-    total: number
-    active: number
-    active_premium: number
-    effectuation_rate: number
-    cancel_rate: number
-    non_effectuated_rate: number
+    plan_code: string; plan_name: string; total: number; active: number
+    active_premium: number; effectuation_rate: number; cancel_rate: number; non_effectuated_rate: number
   }>
-  underwriting_speed?: {
-    avg_days: number
-    sample_size: number
-    distribution: Record<string, number>
-  }
+  underwriting_speed?: { avg_days: number; sample_size: number; distribution: Record<string, number> }
   cancellation?: {
-    never_started: number
-    paid_then_cancelled: number
-    avg_days_on_books: number
-    days_buckets: Record<string, number>
+    never_started: number; paid_then_cancelled: number
+    avg_days_on_books: number; days_buckets: Record<string, number>
   }
 }
 
 type DrillPolicy = {
-  id: string
-  policy_number: string
-  first_name: string
-  last_name: string
-  agent_name: string
-  wa_code: string
-  plan_code: string
-  issue_date: string | null
-  paid_to_date: string | null
-  annual_premium: number
-  issue_state: string
-  classification: string
+  id: string; policy_number: string; first_name: string; last_name: string
+  agent_name: string; wa_code: string; plan_code: string
+  issue_date: string | null; paid_to_date: string | null
+  annual_premium: number; issue_state: string; classification: string
 }
 
-function fmt$(n: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0)
-}
-function fmtPct(n: number) {
-  return `${(n || 0).toFixed(1)}%`
-}
-function fmtDate(iso: string | null | undefined) {
+// ── Formatters ────────────────────────────────────────────────────────────────
+const fmt$ = (n: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0)
+const fmtPct = (n: number) => `${(n || 0).toFixed(1)}%`
+const fmtDate = (iso: string | null | undefined) => {
   if (!iso) return '—'
   try { return new Date(iso).toLocaleDateString() } catch { return iso }
 }
-function fmtDt(iso: string | null | undefined) {
+const fmtDt = (iso: string | null | undefined) => {
   if (!iso) return '—'
   try { return new Date(iso).toLocaleString() } catch { return iso }
 }
 
+// ── Metric tooltips ───────────────────────────────────────────────────────────
+const TIPS: Record<string, string> = {
+  'Total Policies':    'Every policy row in the UNL file assigned to this agency, across all statuses.',
+  'Active':            'Policies with an active contract code (AC) and a paid-to date in the future. Effectuation rate = Active ÷ Definitive.',
+  'Cancelled':         'Terminated + Lapsed policies. Excludes DC-reason (claim) cancellations from the cancel rate.',
+  'Non-Effectuated':   'Policies that were written but payment was never collected — they never became active.',
+  'Active Premium':    'Sum of annual premiums for all currently Active policies. Avg is per active policy.',
+  'Pending New':       'Application submitted, awaiting underwriting decision. Not yet issued.',
+  'Pending Payment':   'Policy issued but first payment not yet received. At risk of becoming Non-Effectuated.',
+  'Pending/Cancel':    'Active policy with a pending cancellation request in progress.',
+  'Future Effective':  'Approved policy with an issue date in the future — not yet active.',
+  'Lapsed':            'Previously active policy that lapsed due to non-payment after the grace period.',
+  'Suspended':         'Policy temporarily suspended — usually awaiting billing resolution.',
+  'Reinstatement Rate':'% of lapsed/terminated policies successfully reinstated (RS or RE reason code).',
+  'Definitive':        'Total minus Pending and Suspended. The "real" policy base used for rate calculations.',
+  'Claims (DC)':       'Policies cancelled because the insured passed away (Death Claim — reason code DC). These are excluded from the cancel rate since they are not a retention failure.',
+}
+
+// ── Tooltip component ─────────────────────────────────────────────────────────
+function Tip({ text }: { text?: string }) {
+  const [show, setShow] = useState(false)
+  if (!text) return null
+  return (
+    <span
+      style={{ position: 'relative', display: 'inline-block', marginLeft: 5 }}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <span style={{ fontSize: 11, color: 'rgba(231,234,240,.40)', cursor: 'default', userSelect: 'none' }}>ⓘ</span>
+      {show && (
+        <div style={{
+          position: 'absolute', bottom: 'calc(100% + 6px)', left: 0,
+          background: 'rgba(8,14,26,.98)', border: '1px solid rgba(255,255,255,.14)',
+          borderRadius: 10, padding: '10px 13px', fontSize: 12,
+          color: 'rgba(231,234,240,.88)', width: 240, zIndex: 200,
+          boxShadow: '0 12px 32px rgba(0,0,0,.55)', lineHeight: 1.55,
+          pointerEvents: 'none', whiteSpace: 'normal',
+        }}>
+          {text}
+        </div>
+      )}
+    </span>
+  )
+}
+
+// ── StatCard ──────────────────────────────────────────────────────────────────
+const ACCENT_COLORS: Record<string, string> = {
+  green: 'var(--c-green)', red: 'var(--c-red)', orange: 'var(--c-orange)',
+  blue: 'var(--c-blue)', teal: 'var(--c-teal)', gold: 'var(--gold)', purple: 'var(--c-purple)',
+}
+
 function StatCard({
-  label,
-  value,
-  sub,
-  accent,
-  onClick,
+  label, value, sub, accent, onClick,
 }: {
-  label: string
-  value: string
-  sub?: string
-  accent?: 'green' | 'red' | 'orange' | 'blue' | 'teal' | 'gold' | 'purple'
+  label: string; value: string; sub?: string
+  accent?: keyof typeof ACCENT_COLORS
   onClick?: () => void
 }) {
   const accentClass = accent ? ` card${accent.charAt(0).toUpperCase() + accent.slice(1)}` : ''
-  const accentColors: Record<string, string> = {
-    green: 'var(--c-green)', red: 'var(--c-red)', orange: 'var(--c-orange)',
-    blue: 'var(--c-blue)', teal: 'var(--c-teal)', gold: 'var(--gold)', purple: 'var(--c-purple)',
-  }
-  const valueColor = accent ? accentColors[accent] : 'var(--text)'
+  const valueColor = accent ? ACCENT_COLORS[accent] : 'var(--text)'
   return (
     <div
       className={`card${accentClass}`}
-      style={onClick ? { cursor: 'pointer' } : undefined}
+      style={{ cursor: onClick ? 'pointer' : 'default', height: '100%' }}
       onClick={onClick}
     >
-      <div className="cardInner" style={{ padding: '14px 16px' }}>
-        <div className="cardTitle">{label}</div>
-        <div style={{ fontSize: 28, fontWeight: 800, marginTop: 8, lineHeight: 1.1, letterSpacing: '-.5px', color: valueColor }}>
-          {value}
+      <div className="cardInner" style={{ padding: '14px 16px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div className="cardTitle" style={{ flex: 1 }}>{label}</div>
+          <Tip text={TIPS[label]} />
         </div>
-        {sub && <div className="kpiHint" style={{ marginTop: 5 }}>{sub}</div>}
+        <div>
+          <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.1, letterSpacing: '-.5px', marginTop: 8, color: valueColor }}>
+            {value}
+          </div>
+          {sub && <div className="kpiHint" style={{ marginTop: 5 }}>{sub}</div>}
+        </div>
       </div>
     </div>
   )
 }
 
+// ── RateBar ───────────────────────────────────────────────────────────────────
 function RateBar({ label, value, color }: { label: string; value: number; color?: string }) {
   const fillClass = color ? `barFill barFill${color.charAt(0).toUpperCase() + color.slice(1)}` : 'barFill'
   return (
@@ -193,50 +188,35 @@ function RateBar({ label, value, color }: { label: string; value: number; color?
         <div className="kpiHint">{label}</div>
         <div style={{ fontWeight: 700, fontSize: 13 }}>{fmtPct(value)}</div>
       </div>
-      <div className="bar">
-        <div className={fillClass} style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
-      </div>
+      <div className="bar"><div className={fillClass} style={{ width: `${Math.min(100, Math.max(0, value))}%` }} /></div>
     </div>
   )
 }
 
-/** Ranked list with alternating row shading + a thin inline proportion bar per row */
+// ── StatList ──────────────────────────────────────────────────────────────────
 function StatList({
-  items,
-  color = 'rgba(201,168,76,.75)',
-  emptyMsg = 'No data.',
+  items, color = 'rgba(201,168,76,.75)', emptyMsg = 'No data.',
 }: {
-  items: Array<{ label: string; value: number; sub?: string }>
-  color?: string
-  emptyMsg?: string
+  items: Array<{ label: string; value: number }>
+  color?: string; emptyMsg?: string
 }) {
   if (!items.length) return <div className="pageSub" style={{ marginTop: 8 }}>{emptyMsg}</div>
   const peak = Math.max(...items.map(i => i.value), 1)
   return (
     <div style={{ marginTop: 10 }}>
       {items.map((item, idx) => (
-        <div
-          key={item.label}
-          style={{
-            padding: '7px 8px',
-            borderRadius: 8,
-            background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,.03)',
-          }}
-        >
+        <div key={item.label} style={{
+          padding: '7px 8px', borderRadius: 8,
+          background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,.03)',
+        }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-            <div style={{ fontSize: 12, color: 'var(--muted)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-              title={item.label}>
+            <div style={{ fontSize: 12, color: 'var(--muted)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.label}>
               {item.label}
             </div>
             <div style={{ fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{item.value.toLocaleString()}</div>
           </div>
           <div style={{ height: 3, borderRadius: 999, background: 'rgba(255,255,255,.07)', marginTop: 5 }}>
-            <div style={{
-              height: '100%', borderRadius: 999,
-              width: `${Math.round((item.value / peak) * 100)}%`,
-              background: color,
-              transition: 'width .3s ease',
-            }} />
+            <div style={{ height: '100%', borderRadius: 999, width: `${Math.round((item.value / peak) * 100)}%`, background: color, transition: 'width .3s ease' }} />
           </div>
         </div>
       ))}
@@ -244,6 +224,62 @@ function StatList({
   )
 }
 
+// ── CSV export ────────────────────────────────────────────────────────────────
+function downloadCsv(rows: DrillPolicy[], title: string) {
+  const headers = ['Policy #', 'First Name', 'Last Name', 'Agent', 'WA Code', 'State', 'Plan', 'Issue Date', 'Paid To', 'Annual Premium', 'Status']
+  const lines = [
+    headers.join(','),
+    ...rows.map(p => [
+      p.policy_number, p.first_name, p.last_name, p.agent_name, p.wa_code,
+      p.issue_state, p.plan_code,
+      p.issue_date || '', p.paid_to_date || '',
+      p.annual_premium.toFixed(2), p.classification,
+    ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+  ]
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${title.replace(/[^a-z0-9]/gi, '_')}_export.csv`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+// ── Date presets ──────────────────────────────────────────────────────────────
+function dateStr(d: Date) {
+  return d.toISOString().slice(0, 10)
+}
+const DATE_PRESETS = [
+  {
+    label: 'MTD', getRange: () => {
+      const now = new Date(); const f = new Date(now.getFullYear(), now.getMonth(), 1)
+      return { from: dateStr(f), to: dateStr(now) }
+    },
+  },
+  {
+    label: 'YTD', getRange: () => {
+      const now = new Date(); const f = new Date(now.getFullYear(), 0, 1)
+      return { from: dateStr(f), to: dateStr(now) }
+    },
+  },
+  {
+    label: 'L30', getRange: () => {
+      const to = new Date(); const from = new Date(); from.setDate(from.getDate() - 30)
+      return { from: dateStr(from), to: dateStr(to) }
+    },
+  },
+  {
+    label: 'L90', getRange: () => {
+      const to = new Date(); const from = new Date(); from.setDate(from.getDate() - 90)
+      return { from: dateStr(from), to: dateStr(to) }
+    },
+  },
+  { label: 'All', getRange: () => ({ from: '', to: '' }) },
+]
+
+// ── Main component ────────────────────────────────────────────────────────────
 export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
   const [unlStatus, setUnlStatus] = useState<UnlStatus | null>(null)
   const [jobId, setJobId] = useState('')
@@ -253,8 +289,6 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [statsError, setStatsError] = useState('')
   const [statsLoading, setStatsLoading] = useState(true)
-
-  // Full agency list cached from the initial all-agencies load — kept even when drilling into one agency
   const [allAgencies, setAllAgencies] = useState<DashboardStats['agencies']>([])
 
   const [extras, setExtras] = useState<Extras | null>(null)
@@ -267,9 +301,8 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
   const [appliedDateFrom, setAppliedDateFrom] = useState('')
   const [appliedDateTo, setAppliedDateTo] = useState('')
   const [appliedAgent, setAppliedAgent] = useState('')
+  const [activePreset, setActivePreset] = useState('')
 
-  // Agent list loaded lazily when filter is opened
-  const [agentFilterOpen, setAgentFilterOpen] = useState(false)
   const [availableAgents, setAvailableAgents] = useState<string[]>([])
   const [agentsLoading, setAgentsLoading] = useState(false)
 
@@ -278,9 +311,11 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
   const [drillTitle, setDrillTitle] = useState('')
   const [drillClassifications, setDrillClassifications] = useState<string[]>([])
   const [drillRows, setDrillRows] = useState<DrillPolicy[]>([])
+  const [drillAllRows, setDrillAllRows] = useState<DrillPolicy[]>([])
   const [drillTotal, setDrillTotal] = useState(0)
   const [drillPage, setDrillPage] = useState(1)
   const [drillLoading, setDrillLoading] = useState(false)
+  const [drillExporting, setDrillExporting] = useState(false)
   const [drillError, setDrillError] = useState('')
 
   const drillTotalPages = Math.max(1, Math.ceil(drillTotal / 25))
@@ -303,10 +338,7 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
     try {
       const res = await apiGet<DashboardStats>(`/api/policy-reports/guardian/dashboard-stats${buildQs()}`, token)
       setStats(res)
-      // Cache the full agency list from unfiltered loads so the scope dropdown always has all options
-      if (!selectedAgencyScope && res.agencies?.length) {
-        setAllAgencies(res.agencies)
-      }
+      if (!selectedAgencyScope && res.agencies?.length) setAllAgencies(res.agencies)
     } catch (err) {
       setStatsError(err instanceof Error ? err.message : 'Failed to load stats')
       setStats(null)
@@ -320,20 +352,13 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
     try {
       const res = await apiGet<Extras>(`/api/policy-reports/guardian/dashboard-extras${buildQs()}`, token)
       setExtras(res)
-    } catch {
-      // extras are non-critical
-    } finally {
+    } catch { /* non-critical */ } finally {
       setExtrasLoading(false)
     }
   }
 
   const fetchUnl = async () => {
-    try {
-      const s = await apiGet<UnlStatus>('/api/unl/status', token)
-      setUnlStatus(s)
-    } catch {
-      // non-critical
-    }
+    try { setUnlStatus(await apiGet<UnlStatus>('/api/unl/status', token)) } catch { /* ignore */ }
   }
 
   const fetchAgents = async () => {
@@ -342,11 +367,7 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
     try {
       const res = await apiGet<{ agents: string[] }>(`/api/policy-reports/guardian/available-agents${buildQs()}`, token)
       setAvailableAgents(res.agents || [])
-    } catch {
-      // ignore
-    } finally {
-      setAgentsLoading(false)
-    }
+    } catch { /* ignore */ } finally { setAgentsLoading(false) }
   }
 
   const fetchDrill = async (classifications: string[], title: string, page: number) => {
@@ -358,8 +379,7 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
       if (appliedDateFrom) qs.set('date_from', appliedDateFrom)
       if (appliedDateTo) qs.set('date_to', appliedDateTo)
       if (appliedAgent) qs.set('agent_name', appliedAgent)
-      qs.set('page', String(page))
-      qs.set('page_size', '25')
+      qs.set('page', String(page)); qs.set('page_size', '25')
       for (const c of classifications) qs.append('classification', c)
       const res = await apiGet<{ policies: DrillPolicy[]; total: number }>(
         `/api/policy-reports/guardian/policies?${qs.toString()}`, token,
@@ -371,33 +391,31 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
       setDrillPage(page)
     } catch (err) {
       setDrillError(err instanceof Error ? err.message : 'Failed to load policies')
-      setDrillRows([])
-      setDrillTotal(0)
-    } finally {
-      setDrillLoading(false)
-    }
+      setDrillRows([]); setDrillTotal(0)
+    } finally { setDrillLoading(false) }
   }
 
-  // Initial load
-  useEffect(() => {
-    fetchUnl()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
+  const exportDrill = async () => {
+    setDrillExporting(true)
+    try {
+      const qs = new URLSearchParams()
+      if (me.role === 'super_admin' && selectedAgencyScope) qs.set('agency_id', selectedAgencyScope)
+      if (appliedDateFrom) qs.set('date_from', appliedDateFrom)
+      if (appliedDateTo) qs.set('date_to', appliedDateTo)
+      if (appliedAgent) qs.set('agent_name', appliedAgent)
+      qs.set('page', '1'); qs.set('page_size', '5000')
+      for (const c of drillClassifications) qs.append('classification', c)
+      const res = await apiGet<{ policies: DrillPolicy[] }>(
+        `/api/policy-reports/guardian/policies?${qs.toString()}`, token,
+      )
+      downloadCsv(res.policies || [], drillTitle)
+    } catch { /* ignore */ } finally { setDrillExporting(false) }
+  }
 
-  useEffect(() => {
-    fetchStats()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, selectedAgencyScope, appliedDateFrom, appliedDateTo, appliedAgent])
+  useEffect(() => { fetchUnl() }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchStats() }, [token, selectedAgencyScope, appliedDateFrom, appliedDateTo, appliedAgent]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!statsLoading && stats) fetchExtras() }, [statsLoading]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // After stats load, fetch extras in background
-  useEffect(() => {
-    if (!statsLoading && stats) {
-      fetchExtras()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statsLoading])
-
-  // Poll job status
   useEffect(() => {
     if (!jobId) return
     let cancelled = false
@@ -406,93 +424,72 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
         const j = await apiGet<JobResponse>(`/api/jobs/${jobId}`, token)
         if (!cancelled) setJob(j)
         if (j?.status === 'succeeded' || j?.status === 'failed') {
-          clearInterval(interval)
-          setImporting(false)
-          fetchUnl()
-          fetchStats()
+          clearInterval(interval); setImporting(false); fetchUnl(); fetchStats()
         }
       } catch { /* ignore */ }
     }, 1500)
     return () => { cancelled = true; clearInterval(interval) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobId])
+  }, [jobId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const trendMax = useMemo(() => Math.max(...(stats?.monthly_trend || []).map(m => m.total), 1), [stats?.monthly_trend])
+  const trendMax = useMemo(() =>
+    Math.max(...(stats?.monthly_trend || []).map(m => m.total), 1),
+    [stats?.monthly_trend]
+  )
+
+  const applyPreset = (preset: typeof DATE_PRESETS[0]) => {
+    const { from, to } = preset.getRange()
+    setFilterDateFrom(from); setFilterDateTo(to)
+    setAppliedDateFrom(from); setAppliedDateTo(to)
+    setActivePreset(preset.label)
+  }
 
   const applyFilters = () => {
-    setAppliedDateFrom(filterDateFrom)
-    setAppliedDateTo(filterDateTo)
-    setAppliedAgent(filterAgent)
+    setAppliedDateFrom(filterDateFrom); setAppliedDateTo(filterDateTo); setAppliedAgent(filterAgent)
+    setActivePreset('')
   }
 
   const clearFilters = () => {
     setFilterDateFrom(''); setFilterDateTo(''); setFilterAgent('')
     setAppliedDateFrom(''); setAppliedDateTo(''); setAppliedAgent('')
+    setActivePreset('')
   }
 
   const queueImport = async () => {
     setImporting(true)
     try {
       const res = await apiPost<{ job_id: string }>('/api/jobs/unl-import-latest', {}, token)
-      setJobId(res.job_id)
-      setJob(null)
-    } catch {
-      setImporting(false)
-    }
+      setJobId(res.job_id); setJob(null)
+    } catch { setImporting(false) }
   }
 
-  // ── Sync status bar ──────────────────────────────────────────────────────────
+  // ── Sync bar ───────────────────────────────────────────────────────────────
   const syncBar = (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-      padding: '10px 0', marginBottom: 16,
-      borderBottom: '1px solid var(--stroke)',
-    }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 0', marginBottom: 20, borderBottom: '1px solid var(--stroke)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
         <div className={`badge ${unlStatus?.last_import_at ? 'badgeGreen' : 'badgeOrange'}`}>
           {unlStatus?.last_import_at ? 'SFTP Synced' : 'Not Synced'}
         </div>
-        {unlStatus?.last_import_file && (
-          <span className="kpiHint" style={{ fontSize: 11 }}>
-            {unlStatus.last_import_file}
-          </span>
-        )}
-        {unlStatus?.last_import_at && (
-          <span className="kpiHint" style={{ fontSize: 11 }}>
-            · {fmtDt(unlStatus.last_import_at)}
-          </span>
-        )}
-        {unlStatus?.unrouted_rows_total ? (
-          <div className="badge badgeOrange" style={{ fontSize: 11 }}>
-            {unlStatus.unrouted_rows_total} unrouted
-          </div>
-        ) : null}
+        {unlStatus?.last_import_file && <span className="kpiHint" style={{ fontSize: 11 }}>{unlStatus.last_import_file}</span>}
+        {unlStatus?.last_import_at && <span className="kpiHint" style={{ fontSize: 11 }}>· {fmtDt(unlStatus.last_import_at)}</span>}
+        {!!unlStatus?.unrouted_rows_total && <div className="badge badgeOrange">{unlStatus.unrouted_rows_total} unrouted</div>}
         {(unlStatus?.sftp_error || unlStatus?.db_error) && (
-          <div className="badge badgeRed" style={{ fontSize: 11 }}>
-            {unlStatus.sftp_error || unlStatus.db_error}
-          </div>
+          <div className="badge badgeRed">{unlStatus.sftp_error || unlStatus.db_error}</div>
         )}
-        {jobId && job && (
-          <div className="badge badgeBlue" style={{ fontSize: 11 }}>
-            Import: {job.status}
-          </div>
-        )}
+        {jobId && job && <div className="badge badgeBlue">Import: {job.status}</div>}
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn btnGold" style={{ fontSize: 12, padding: '6px 12px' }}
-          onClick={queueImport} disabled={importing}>
+        <button className="btn btnGold" style={{ fontSize: 12, padding: '6px 12px' }} onClick={queueImport} disabled={importing}>
           {importing ? 'Importing…' : 'Import Now'}
         </button>
-        <button className="btn btnGhost" style={{ fontSize: 12, padding: '6px 10px' }}
-          onClick={() => { fetchUnl(); fetchStats() }}>
+        <button className="btn btnGhost" style={{ fontSize: 12, padding: '6px 10px' }} onClick={() => { fetchUnl(); fetchStats() }}>
           ↻ Refresh
         </button>
       </div>
     </div>
   )
 
-  // ── Header + filters ────────────────────────────────────────────────────────
-  const headerSection = (
+  // ── Filters ────────────────────────────────────────────────────────────────
+  const filtersSection = (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
         <div>
@@ -504,12 +501,8 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
           </div>
         </div>
         {me.role === 'super_admin' && (allAgencies.length > 0 || stats?.agencies) && (
-          <select
-            className="select"
-            style={{ fontSize: 12, height: 36 }}
-            value={selectedAgencyScope}
-            onChange={e => setSelectedAgencyScope(e.target.value)}
-          >
+          <select className="select" style={{ fontSize: 12, height: 36 }}
+            value={selectedAgencyScope} onChange={e => setSelectedAgencyScope(e.target.value)}>
             <option value="">All agencies</option>
             {(allAgencies.length > 0 ? allAgencies : stats?.agencies || []).map(a => (
               <option key={a.id} value={a.id}>{a.name}</option>
@@ -518,28 +511,36 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
         )}
       </div>
 
-      <div className="filters" style={{ marginTop: 14 }}>
+      {/* Date presets */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 14, marginBottom: 10 }}>
+        {DATE_PRESETS.map(p => (
+          <button key={p.label} className={`pill${activePreset === p.label ? ' pillActive' : ''}`}
+            style={{ fontSize: 12, padding: '5px 12px' }} onClick={() => applyPreset(p)}>
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Manual date + agent filters */}
+      <div className="filters">
         <div className="field">
           <div>Issue date from</div>
-          <input className="input" type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
+          <input className="input" type="date" value={filterDateFrom} onChange={e => { setFilterDateFrom(e.target.value); setActivePreset('') }} />
         </div>
         <div className="field">
           <div>Issue date to</div>
-          <input className="input" type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
+          <input className="input" type="date" value={filterDateTo} onChange={e => { setFilterDateTo(e.target.value); setActivePreset('') }} />
         </div>
         <div className="field" style={{ minWidth: 200 }}>
           <div>Agent</div>
-          <select
-            className="select"
-            value={filterAgent}
-            onFocus={() => { setAgentFilterOpen(true); fetchAgents() }}
-            onChange={e => setFilterAgent(e.target.value)}
-          >
+          <select className="select" value={filterAgent}
+            onFocus={() => fetchAgents()}
+            onChange={e => setFilterAgent(e.target.value)}>
             <option value="">All agents{agentsLoading ? ' (loading…)' : ''}</option>
             {availableAgents.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
         </div>
-        <button className="btn btnGold" onClick={applyFilters}>Apply filters</button>
+        <button className="btn btnGold" onClick={applyFilters}>Apply</button>
         {(appliedDateFrom || appliedDateTo || appliedAgent) && (
           <button className="btn btnGhost" onClick={clearFilters}>Clear</button>
         )}
@@ -547,17 +548,16 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
     </div>
   )
 
-  // ── KPI rows ────────────────────────────────────────────────────────────────
+  // ── KPI cards ──────────────────────────────────────────────────────────────
   const kpiSection = stats ? (
-    <>
-      {/* Row 1: main metrics */}
-      <div className="grid4" style={{ marginTop: 16 }}>
+    <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Row 1: 4 primary colored cards — equal height */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
         <StatCard label="Total Policies" value={stats.total_policies.toLocaleString()}
-          sub={fmt$(stats.total_premium)} accent="blue"
-          onClick={() => fetchDrill([], 'All Policies', 1)} />
+          sub={fmt$(stats.total_premium)} accent="blue" onClick={() => fetchDrill([], 'All Policies', 1)} />
         <StatCard label="Active" value={stats.active_count.toLocaleString()}
           sub={`${fmtPct(stats.effectuation_rate)} effectuation`} accent="green"
-          onClick={() => fetchDrill(['active'], 'Active Policies', 1)} />
+          onClick={() => fetchDrill(['active'], 'Active', 1)} />
         <StatCard label="Cancelled" value={stats.cancelled_count.toLocaleString()}
           sub={`${fmtPct(stats.cancel_rate)} cancel rate`} accent="red"
           onClick={() => fetchDrill(['terminated', 'lapsed'], 'Cancelled', 1)} />
@@ -566,40 +566,41 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
           onClick={() => fetchDrill(['non_effectuated'], 'Non-Effectuated', 1)} />
       </div>
 
-      {/* Row 2: pipeline + secondary */}
-      <div className="grid6" style={{ marginTop: 10 }}>
+      {/* Row 2: 4 pipeline colored cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
         <StatCard label="Active Premium" value={fmt$(stats.active_premium)}
           sub={`avg ${fmt$(stats.avg_premium)}`} accent="teal"
-          onClick={() => fetchDrill(['active'], 'Active Policies', 1)} />
+          onClick={() => fetchDrill(['active'], 'Active', 1)} />
         <StatCard label="Pending New" value={stats.pending_new_count.toLocaleString()}
-          accent="gold"
-          onClick={() => fetchDrill(['pending_new'], 'Pending (New)', 1)} />
+          sub="awaiting underwriting" accent="gold"
+          onClick={() => fetchDrill(['pending_new'], 'Pending New', 1)} />
         <StatCard label="Pending Payment" value={stats.pending_payment_count.toLocaleString()}
-          onClick={() => fetchDrill(['pending_payment'], 'Pending (Payment)', 1)} />
+          sub="issued, no payment" accent="purple"
+          onClick={() => fetchDrill(['pending_payment'], 'Pending Payment', 1)} />
         <StatCard label="Pending/Cancel" value={stats.pending_cancel_count.toLocaleString()}
-          accent="orange"
+          sub="cancellation in progress" accent="orange"
           onClick={() => fetchDrill(['pending_cancel'], 'Pending/Cancel', 1)} />
-        <StatCard label="Future Effective" value={stats.future_effective_count.toLocaleString()}
-          onClick={() => fetchDrill(['future_effective'], 'Future Effective', 1)} />
-        <StatCard label="Lapsed" value={stats.lapsed_count.toLocaleString()}
-          onClick={() => fetchDrill(['lapsed'], 'Lapsed', 1)} />
       </div>
 
-      {/* Row 3: off-books secondary */}
-      <div className="grid4" style={{ marginTop: 10 }}>
+      {/* Row 3: plain secondary cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
+        <StatCard label="Future Effective" value={stats.future_effective_count.toLocaleString()}
+          sub="starts in future" onClick={() => fetchDrill(['future_effective'], 'Future Effective', 1)} />
+        <StatCard label="Lapsed" value={stats.lapsed_count.toLocaleString()}
+          sub="non-payment" onClick={() => fetchDrill(['lapsed'], 'Lapsed', 1)} />
         <StatCard label="Suspended" value={stats.suspended_count.toLocaleString()}
           onClick={() => fetchDrill(['suspended'], 'Suspended', 1)} />
         <StatCard label="Reinstatement Rate" value={fmtPct(stats.reinstatement?.rate ?? 0)}
-          sub={`${(stats.reinstatement?.count ?? 0).toLocaleString()} / ${(stats.reinstatement?.pool ?? 0).toLocaleString()}`} />
+          sub={`${(stats.reinstatement?.count ?? 0).toLocaleString()} won back`} />
         <StatCard label="Definitive" value={stats.definitive.toLocaleString()}
-          sub="active + cancelled" />
+          sub="excl. pending + suspended" />
         <StatCard label="Claims (DC)" value={stats.claim_count.toLocaleString()}
-          sub="excluded from cancel rate" />
+          sub="excl. from cancel rate" />
       </div>
-    </>
+    </div>
   ) : null
 
-  // ── Overview tab ─────────────────────────────────────────────────────────────
+  // ── Overview tab ───────────────────────────────────────────────────────────
   const overviewTab = stats ? (
     <div className="grid3" style={{ marginTop: 14 }}>
       <div className="card">
@@ -610,33 +611,32 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
             <RateBar label="Cancel rate (excl. claims)" value={stats.cancel_rate} color="Red" />
             <RateBar label="Non-effectuation rate" value={stats.non_effectuated_rate} color="Orange" />
           </div>
-          <div className="pageSub" style={{ marginTop: 12 }}>
-            Definitive: {stats.definitive.toLocaleString()} policies
-          </div>
+          <div className="pageSub" style={{ marginTop: 12 }}>Definitive: {stats.definitive.toLocaleString()}</div>
         </div>
       </div>
 
+      {/* Monthly trend — fixed bar chart */}
       <div className="card">
         <div className="cardInner">
           <div className="cardTitle">Monthly issued (last 14 mo)</div>
-          <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 100, marginTop: 12 }}>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 110, marginTop: 14 }}>
             {(stats.monthly_trend || []).slice(-14).map(m => {
-              const h = Math.max(4, Math.round((m.total / trendMax) * 100))
+              const pct = Math.max(6, Math.round((m.total / trendMax) * 100))
               return (
-                <div key={m.month} style={{ flex: 1, minWidth: 8 }} title={`${m.month_full}: ${m.total}`}>
+                <div key={m.month} title={`${m.month_full}: ${m.total}`}
+                  style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%' }}>
                   <div style={{
-                    height: `${h}%`,
-                    borderRadius: 6,
-                    background: 'linear-gradient(180deg, rgba(52,211,153,.60), rgba(52,211,153,.10))',
-                    border: '1px solid rgba(52,211,153,.20)',
+                    height: `${pct}%`, borderRadius: '4px 4px 0 0',
+                    background: 'linear-gradient(180deg, rgba(52,211,153,.75) 0%, rgba(52,211,153,.20) 100%)',
                   }} />
-                  <div className="kpiHint" style={{ fontSize: 9, textAlign: 'center', marginTop: 4 }}>
+                  <div style={{ fontSize: 9, textAlign: 'center', marginTop: 4, color: 'var(--muted2)' }}>
                     {m.month.slice(5)}
                   </div>
                 </div>
               )
             })}
           </div>
+          {!stats.monthly_trend?.length && <div className="pageSub" style={{ marginTop: 12 }}>No trend data yet.</div>}
         </div>
       </div>
 
@@ -645,18 +645,15 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
           <div className="cardTitle">Top states (active)</div>
           <StatList
             items={Object.entries(stats.states || {}).slice(0, 12).map(([s, c]) => ({ label: s, value: c }))}
-            color="rgba(52,211,153,.80)"
-            emptyMsg="No state data."
-          />
+            color="rgba(52,211,153,.80)" emptyMsg="No state data." />
         </div>
       </div>
 
-      {/* Extras: reason + uw + cancellation */}
       {extrasLoading && (
         <div className="card" style={{ gridColumn: '1 / -1' }}>
           <div className="cardInner">
-            <div className="skeleton" style={{ height: 12, width: 200 }} />
-            <div className="skeleton" style={{ height: 40, marginTop: 10 }} />
+            <div className="skeleton" style={{ height: 11, width: 180 }} />
+            <div className="skeleton" style={{ height: 60, marginTop: 10 }} />
           </div>
         </div>
       )}
@@ -667,13 +664,8 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
             <div className="cardInner">
               <div className="cardTitle">Contract reasons</div>
               <StatList
-                items={(extras.reason_breakdown || []).slice(0, 12).map(r => ({
-                  label: `${r.code} · ${r.label}`,
-                  value: r.count,
-                }))}
-                color="rgba(99,102,241,.80)"
-                emptyMsg="No reason codes."
-              />
+                items={(extras.reason_breakdown || []).slice(0, 12).map(r => ({ label: `${r.code} · ${r.label}`, value: r.count }))}
+                color="rgba(99,102,241,.80)" emptyMsg="No reason codes." />
             </div>
           </div>
 
@@ -688,9 +680,7 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
               </div>
               <StatList
                 items={Object.entries(extras.underwriting_speed?.distribution || {}).map(([k, v]) => ({ label: k, value: Number(v) }))}
-                color="rgba(34,211,238,.80)"
-                emptyMsg="No underwriting data."
-              />
+                color="rgba(34,211,238,.80)" emptyMsg="No data." />
             </div>
           </div>
 
@@ -705,22 +695,20 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
               </div>
               <StatList
                 items={Object.entries(extras.cancellation?.days_buckets || {}).map(([k, v]) => ({ label: k, value: Number(v) }))}
-                color="rgba(248,113,113,.80)"
-                emptyMsg="No cancellation data."
-              />
+                color="rgba(248,113,113,.80)" emptyMsg="No data." />
             </div>
           </div>
         </>
       )}
 
-      {/* Product mix table */}
+      {/* Product mix table with zebra striping */}
       {extras?.product_mix && extras.product_mix.length > 0 && (
         <div className="card" style={{ gridColumn: '1 / -1' }}>
           <div className="cardInner">
             <div className="cardTitle">Product mix</div>
             <div className="pageSub">Effectuation + cancel + non-eff rates per plan</div>
             <div className="tableWrap" style={{ marginTop: 12 }}>
-              <table className="table">
+              <table className="table tableZebra">
                 <thead>
                   <tr>
                     <th className="th">Plan</th>
@@ -739,9 +727,9 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
                       <td className="td">{p.total.toLocaleString()}</td>
                       <td className="td">{p.active.toLocaleString()}</td>
                       <td className="td tdStrong">{fmt$(p.active_premium)}</td>
-                      <td className="td">{fmtPct(p.effectuation_rate)}</td>
-                      <td className="td">{fmtPct(p.cancel_rate)}</td>
-                      <td className="td">{fmtPct(p.non_effectuated_rate)}</td>
+                      <td className="td" style={{ color: 'var(--c-green)' }}>{fmtPct(p.effectuation_rate)}</td>
+                      <td className="td" style={{ color: 'var(--c-red)' }}>{fmtPct(p.cancel_rate)}</td>
+                      <td className="td" style={{ color: 'var(--c-orange)' }}>{fmtPct(p.non_effectuated_rate)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -753,10 +741,10 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
     </div>
   ) : null
 
-  // ── Agencies tab ─────────────────────────────────────────────────────────────
+  // ── Agencies tab ───────────────────────────────────────────────────────────
   const agenciesTab = stats ? (
     <div className="tableWrap" style={{ marginTop: 14 }}>
-      <table className="table">
+      <table className="table tableZebra">
         <thead>
           <tr>
             <th className="th">Agency</th>
@@ -777,9 +765,9 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
               <td className="td">{a.total.toLocaleString()}</td>
               <td className="td">{a.active.toLocaleString()}</td>
               <td className="td tdStrong">{fmt$(a.active_premium)}</td>
-              <td className="td">{fmtPct(a.effectuation_rate)}</td>
-              <td className="td">{fmtPct(a.cancel_rate)}</td>
-              <td className="td">{fmtPct(a.non_effectuated_rate)}</td>
+              <td className="td" style={{ color: 'var(--c-green)' }}>{fmtPct(a.effectuation_rate)}</td>
+              <td className="td" style={{ color: 'var(--c-red)' }}>{fmtPct(a.cancel_rate)}</td>
+              <td className="td" style={{ color: 'var(--c-orange)' }}>{fmtPct(a.non_effectuated_rate)}</td>
               <td className="td">{a.pending.toLocaleString()}</td>
               <td className="td">{a.lapsed.toLocaleString()}</td>
             </tr>
@@ -789,10 +777,10 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
     </div>
   ) : null
 
-  // ── Agents tab ───────────────────────────────────────────────────────────────
+  // ── Agents tab ─────────────────────────────────────────────────────────────
   const agentsTab = stats ? (
     <div className="tableWrap" style={{ marginTop: 14 }}>
-      <table className="table">
+      <table className="table tableZebra">
         <thead>
           <tr>
             <th className="th">Agent</th>
@@ -813,8 +801,8 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
               <td className="td">{a.agency_name || a.agency_code || '—'}</td>
               <td className="td">{a.active.toLocaleString()}</td>
               <td className="td tdStrong">{fmt$(a.active_premium)}</td>
-              <td className="td">{fmtPct(a.effectuation_rate)}</td>
-              <td className="td">{fmtPct(a.cancel_rate)}</td>
+              <td className="td" style={{ color: 'var(--c-green)' }}>{fmtPct(a.effectuation_rate)}</td>
+              <td className="td" style={{ color: 'var(--c-red)' }}>{fmtPct(a.cancel_rate)}</td>
               <td className="td">{a.pending.toLocaleString()}</td>
             </tr>
           ))}
@@ -824,7 +812,7 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
     </div>
   ) : null
 
-  // ── Drill-down panel ──────────────────────────────────────────────────────────
+  // ── Drill-down panel ───────────────────────────────────────────────────────
   const drillPanel = drillTitle ? (
     <div className="card" style={{ marginTop: 16 }}>
       <div className="cardInner">
@@ -833,17 +821,20 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
             <div style={{ fontWeight: 700, fontSize: 15 }}>{drillTitle}</div>
             <div className="pageSub">{drillTotal.toLocaleString()} policies</div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button className="btn btnGold" style={{ fontSize: 12 }} onClick={exportDrill} disabled={drillExporting}>
+              {drillExporting ? 'Exporting…' : '⬇ Export CSV'}
+            </button>
             <button className="btn" disabled={drillLoading || drillPage <= 1}
               onClick={() => fetchDrill(drillClassifications, drillTitle, drillPage - 1)}>← Prev</button>
             <button className="btn" disabled={drillLoading || drillPage >= drillTotalPages}
               onClick={() => fetchDrill(drillClassifications, drillTitle, drillPage + 1)}>Next →</button>
-            <button className="btn btnGhost" onClick={() => { setDrillTitle(''); setDrillRows([]); setDrillTotal(0) }}>✕ Close</button>
+            <button className="btn btnGhost" onClick={() => { setDrillTitle(''); setDrillRows([]); setDrillTotal(0) }}>✕</button>
           </div>
         </div>
         {drillError && <div className="alert" style={{ marginTop: 10 }}>{drillError}</div>}
         <div className="tableWrap" style={{ marginTop: 10 }}>
-          <table className="table">
+          <table className="table tableZebra">
             <thead>
               <tr>
                 <th className="th">Policy #</th>
@@ -877,6 +868,7 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
     </div>
   ) : null
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div>
       {syncBar}
@@ -885,7 +877,7 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
         <>
           <div className="skeleton" style={{ height: 26, width: 240, marginBottom: 8 }} />
           <div className="skeleton" style={{ height: 14, width: 380, marginBottom: 20 }} />
-          <div className="grid4">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
             {[0,1,2,3].map(i => (
               <div key={i} className="card">
                 <div className="cardInner">
@@ -903,17 +895,13 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
         <div className="alert">No policy data yet. Run a UNL import first.</div>
       ) : (
         <>
-          {headerSection}
+          {filtersSection}
           {kpiSection}
 
-          <div style={{ marginTop: 20 }}>
+          <div style={{ marginTop: 22 }}>
             <div className="pillRow">
               {(['overview', 'agencies', 'agents'] as const).map(t => (
-                <button
-                  key={t}
-                  className={`pill${activeTab === t ? ' pillActive' : ''}`}
-                  onClick={() => setActiveTab(t)}
-                >
+                <button key={t} className={`pill${activeTab === t ? ' pillActive' : ''}`} onClick={() => setActiveTab(t)}>
                   {t === 'overview' ? 'Overview' : t === 'agencies' ? 'Agencies' : 'Agents'}
                 </button>
               ))}

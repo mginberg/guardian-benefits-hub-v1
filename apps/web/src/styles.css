@@ -433,7 +433,10 @@ button, input, select { font: inherit }
   color: rgba(231,234,240,.90);
 }
 .tdStrong { font-weight: 700 }
-tr:hover .td { background: rgba(255,255,255,.025) }
+tr:hover .td { background: rgba(255,255,255,.03) }
+/* Zebra striping for data-heavy tables */
+.tableZebra tbody tr:nth-child(even) td { background: rgba(255,255,255,.025) }
+.tableZebra tbody tr:nth-child(even):hover td { background: rgba(255,255,255,.045) }
 
 /* ─── Skeleton loader ──────────────────────────────────────────────────── */
 .skeleton {
