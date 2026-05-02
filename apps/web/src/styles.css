@@ -19,12 +19,12 @@
   --gold-border: rgba(201,168,76,.28);
 
   /* App shell */
-  --bg-app:      #0b0919;
-  --bg-surface:  #100d22;
+  --bg-app:      #0d0920;
+  --bg-surface:  #110d26;
   --bg-card:     rgba(255,255,255,.042);
   --bg-card-hover: rgba(255,255,255,.058);
   --bg-input:    rgba(0,0,0,.38);
-  --sidebar-bg:  #18103a;   /* dark purple matching logo */
+  --sidebar-bg:  #251458;   /* light purple — matches pending-payment card tone */
   --sidebar-w:   224px;
 
   /* Typography */
@@ -104,10 +104,10 @@ body {
   line-height: 1.55;
   color: var(--text);
   background:
-    radial-gradient(900px 600px at 0% -10%, rgba(88,60,150,.38) 0%, transparent 60%),
-    radial-gradient(700px 400px at 100% -8%, rgba(201,168,76,.10) 0%, transparent 55%),
-    radial-gradient(600px 500px at 50% 100%, rgba(60,40,110,.22) 0%, transparent 60%),
-    linear-gradient(180deg, var(--bg-app) 0%, #07051a 50%, #060418 100%);
+    radial-gradient(900px 600px at 0% -10%, rgba(110,60,200,.42) 0%, transparent 58%),
+    radial-gradient(700px 400px at 100% -8%, rgba(74,108,247,.14) 0%, transparent 55%),
+    radial-gradient(600px 500px at 50% 100%, rgba(80,40,140,.28) 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg-app) 0%, #08051e 50%, #060318 100%);
   background-attachment: fixed;
 }
 

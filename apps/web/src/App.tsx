@@ -82,11 +82,29 @@ function Sidebar({ me, onLogout }: { me: Me; onLogout: () => void }) {
     <aside className="sidebar">
       <div className="sidebarBrand">
         <div className="sidebarLogo">
-          <div className="sidebarLogoIcon">G</div>
+          {/* SVG shield — matches Guardian Benefits logo */}
+          <svg width="36" height="40" viewBox="0 0 36 40" fill="none" style={{ flexShrink: 0 }}>
+            <defs>
+              <linearGradient id="sg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#4a6cf7"/>
+                <stop offset="100%" stopColor="#9b40f0"/>
+              </linearGradient>
+              <linearGradient id="sg2" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#6a8eff" stopOpacity=".5"/>
+                <stop offset="100%" stopColor="#b060ff" stopOpacity=".5"/>
+              </linearGradient>
+            </defs>
+            {/* Outer shield */}
+            <path d="M18 1L35 7.5V22C35 31.5 27.5 37.5 18 40C8.5 37.5 1 31.5 1 22V7.5L18 1Z" fill="url(#sg)"/>
+            {/* Inner shield stroke */}
+            <path d="M18 5L31 10.5V22C31 29.5 25.5 34.5 18 37C10.5 34.5 5 29.5 5 22V10.5L18 5Z" fill="none" stroke="url(#sg2)" strokeWidth="1.5"/>
+            {/* Checkmark */}
+            <path d="M11 20.5L16 25.5L25 15" stroke="white" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
           <div>
             <div style={{ fontWeight: 900, fontSize: 13, letterSpacing: '-.1px', color: '#fff', lineHeight: 1.2 }}>Guardian</div>
-            <div style={{ fontWeight: 900, fontSize: 13, letterSpacing: '-.1px', color: 'var(--gold-bright)', lineHeight: 1.2 }}>Benefits</div>
-            <div style={{ fontWeight: 600, fontSize: 10, color: 'rgba(255,255,255,.42)', letterSpacing: '.5px', textTransform: 'uppercase', marginTop: 2 }}>Hub</div>
+            <div style={{ fontWeight: 900, fontSize: 13, letterSpacing: '-.1px', color: '#b8aaff', lineHeight: 1.2 }}>Benefits</div>
+            <div style={{ fontWeight: 600, fontSize: 10, color: 'rgba(255,255,255,.38)', letterSpacing: '.5px', textTransform: 'uppercase', marginTop: 2 }}>Hub</div>
           </div>
         </div>
       </div>
