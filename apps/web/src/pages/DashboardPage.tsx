@@ -163,6 +163,11 @@ function StatCard({
   onClick?: () => void
 }) {
   const accentClass = accent ? ` card${accent.charAt(0).toUpperCase() + accent.slice(1)}` : ''
+  const accentColors: Record<string, string> = {
+    green: 'var(--c-green)', red: 'var(--c-red)', orange: 'var(--c-orange)',
+    blue: 'var(--c-blue)', teal: 'var(--c-teal)', gold: 'var(--gold)', purple: 'var(--c-purple)',
+  }
+  const valueColor = accent ? accentColors[accent] : 'var(--text)'
   return (
     <div
       className={`card${accentClass}`}
@@ -171,8 +176,10 @@ function StatCard({
     >
       <div className="cardInner" style={{ padding: '14px 16px' }}>
         <div className="cardTitle">{label}</div>
-        <div style={{ fontSize: 26, fontWeight: 800, marginTop: 8, lineHeight: 1.1 }}>{value}</div>
-        {sub && <div className="kpiHint" style={{ marginTop: 4 }}>{sub}</div>}
+        <div style={{ fontSize: 28, fontWeight: 800, marginTop: 8, lineHeight: 1.1, letterSpacing: '-.5px', color: valueColor }}>
+          {value}
+        </div>
+        {sub && <div className="kpiHint" style={{ marginTop: 5 }}>{sub}</div>}
       </div>
     </div>
   )
@@ -202,6 +209,9 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [statsError, setStatsError] = useState('')
   const [statsLoading, setStatsLoading] = useState(true)
+
+  // Full agency list cached from the initial all-agencies load — kept even when drilling into one agency
+  const [allAgencies, setAllAgencies] = useState<DashboardStats['agencies']>([])
 
   const [extras, setExtras] = useState<Extras | null>(null)
   const [extrasLoading, setExtrasLoading] = useState(false)
@@ -249,6 +259,10 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
     try {
       const res = await apiGet<DashboardStats>(`/api/policy-reports/guardian/dashboard-stats${buildQs()}`, token)
       setStats(res)
+      // Cache the full agency list from unfiltered loads so the scope dropdown always has all options
+      if (!selectedAgencyScope && res.agencies?.length) {
+        setAllAgencies(res.agencies)
+      }
     } catch (err) {
       setStatsError(err instanceof Error ? err.message : 'Failed to load stats')
       setStats(null)
@@ -445,7 +459,7 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
             {stats?.last_import_at ? ` · last import ${fmtDate(stats.last_import_at)}` : ''}
           </div>
         </div>
-        {me.role === 'super_admin' && stats?.agencies && (
+        {me.role === 'super_admin' && (allAgencies.length > 0 || stats?.agencies) && (
           <select
             className="select"
             style={{ fontSize: 12, height: 36 }}
@@ -453,7 +467,7 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
             onChange={e => setSelectedAgencyScope(e.target.value)}
           >
             <option value="">All agencies</option>
-            {stats.agencies.map(a => (
+            {(allAgencies.length > 0 ? allAgencies : stats?.agencies || []).map(a => (
               <option key={a.id} value={a.id}>{a.name}</option>
             ))}
           </select>

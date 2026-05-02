@@ -273,14 +273,14 @@ button, input, select { font: inherit }
   color: var(--muted2);
 }
 
-/* Accent card variants — left border stripe + faint bg tint */
-.cardBlue   { border-left: 3px solid var(--c-blue);   background: linear-gradient(160deg, var(--c-blue-bg), rgba(255,255,255,.02)) }
-.cardGreen  { border-left: 3px solid var(--c-green);  background: linear-gradient(160deg, var(--c-green-bg), rgba(255,255,255,.02)) }
-.cardRed    { border-left: 3px solid var(--c-red);    background: linear-gradient(160deg, var(--c-red-bg), rgba(255,255,255,.02)) }
-.cardOrange { border-left: 3px solid var(--c-orange); background: linear-gradient(160deg, var(--c-orange-bg), rgba(255,255,255,.02)) }
-.cardTeal   { border-left: 3px solid var(--c-teal);   background: linear-gradient(160deg, var(--c-teal-bg), rgba(255,255,255,.02)) }
-.cardPurple { border-left: 3px solid var(--c-purple); background: linear-gradient(160deg, var(--c-purple-bg), rgba(255,255,255,.02)) }
-.cardGold   { border-left: 3px solid var(--gold);     background: linear-gradient(160deg, var(--gold2), rgba(255,255,255,.02)) }
+/* Accent card variants — stronger top border + visible bg tint */
+.cardBlue   { border-top: 3px solid var(--c-blue);   background: linear-gradient(160deg, rgba(99,102,241,.16), rgba(255,255,255,.025)) }
+.cardGreen  { border-top: 3px solid var(--c-green);  background: linear-gradient(160deg, rgba(52,211,153,.15), rgba(255,255,255,.025)) }
+.cardRed    { border-top: 3px solid var(--c-red);    background: linear-gradient(160deg, rgba(248,113,113,.15), rgba(255,255,255,.025)) }
+.cardOrange { border-top: 3px solid var(--c-orange); background: linear-gradient(160deg, rgba(251,146,60,.15), rgba(255,255,255,.025)) }
+.cardTeal   { border-top: 3px solid var(--c-teal);   background: linear-gradient(160deg, rgba(34,211,238,.15), rgba(255,255,255,.025)) }
+.cardPurple { border-top: 3px solid var(--c-purple); background: linear-gradient(160deg, rgba(167,139,250,.15), rgba(255,255,255,.025)) }
+.cardGold   { border-top: 3px solid var(--gold);     background: linear-gradient(160deg, rgba(201,168,76,.18), rgba(255,255,255,.025)) }
 
 /* ─── KPI ──────────────────────────────────────────────────────────────── */
 .kpi {
@@ -290,8 +290,8 @@ button, input, select { font: inherit }
   gap: 10px;
   margin-top: 10px;
 }
-.kpiValue   { font-size: 26px; font-weight: 800; line-height: 1.1 }
-.kpiHint    { font-size: 12px; color: var(--muted2) }
+.kpiValue   { font-size: 28px; font-weight: 800; line-height: 1.1; letter-spacing: -.5px }
+.kpiHint    { font-size: 12px; color: rgba(231,234,240,.65) }
 .kpiIcon {
   width: 36px;
   height: 36px;
@@ -351,7 +351,7 @@ button, input, select { font: inherit }
   padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,.12);
-  background: rgba(0,0,0,.28);
+  background: rgba(0,0,0,.40);
   color: var(--text);
   outline: none;
   font-size: 13px;
@@ -359,6 +359,11 @@ button, input, select { font: inherit }
 .input:focus, .select:focus {
   border-color: rgba(201,168,76,.44);
   box-shadow: 0 0 0 3px rgba(201,168,76,.10);
+}
+/* Ensure dropdown options are readable on all platforms */
+.select option {
+  background: #0d1525;
+  color: #e7eaf0;
 }
 
 /* ─── Pills / tabs ─────────────────────────────────────────────────────── */
@@ -401,11 +406,11 @@ button, input, select { font: inherit }
 .barFill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(201,168,76,.70), rgba(201,168,76,.20));
+  background: linear-gradient(90deg, rgba(201,168,76,.85), rgba(201,168,76,.30));
 }
-.barFillGreen  { background: linear-gradient(90deg, rgba(52,211,153,.70), rgba(52,211,153,.20)) }
-.barFillRed    { background: linear-gradient(90deg, rgba(248,113,113,.70), rgba(248,113,113,.20)) }
-.barFillOrange { background: linear-gradient(90deg, rgba(251,146,60,.70), rgba(251,146,60,.20)) }
+.barFillGreen  { background: linear-gradient(90deg, rgba(52,211,153,.90), rgba(52,211,153,.30)) }
+.barFillRed    { background: linear-gradient(90deg, rgba(248,113,113,.90), rgba(248,113,113,.30)) }
+.barFillOrange { background: linear-gradient(90deg, rgba(251,146,60,.90), rgba(251,146,60,.30)) }
 
 /* ─── Table ────────────────────────────────────────────────────────────── */
 .tableWrap  { overflow-x: auto }
