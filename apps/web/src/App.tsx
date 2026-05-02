@@ -176,7 +176,7 @@ export function App() {
         path="/"
         element={
           me ? (
-            <Shell me={me} onLogout={logout} pageTitle="Dashboard" pageSub="UNL policy book · sync health">
+            <Shell me={me} onLogout={logout} pageTitle="Dashboard">
               <DashboardPage token={token} me={{ role: me.role, agency_id: me.agency_id }} />
             </Shell>
           ) : (
