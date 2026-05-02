@@ -83,7 +83,11 @@ function Sidebar({ me, onLogout }: { me: Me; onLogout: () => void }) {
       <div className="sidebarBrand">
         <div className="sidebarLogo">
           <div className="sidebarLogoIcon">G</div>
-          <div className="sidebarTitle">Guardian<br />Benefits Hub</div>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 13, letterSpacing: '-.1px', color: '#fff', lineHeight: 1.2 }}>Guardian</div>
+            <div style={{ fontWeight: 900, fontSize: 13, letterSpacing: '-.1px', color: 'var(--gold-bright)', lineHeight: 1.2 }}>Benefits</div>
+            <div style={{ fontWeight: 600, fontSize: 10, color: 'rgba(255,255,255,.42)', letterSpacing: '.5px', textTransform: 'uppercase', marginTop: 2 }}>Hub</div>
+          </div>
         </div>
       </div>
 
