@@ -100,7 +100,10 @@ export function CommissionPage({ me }: { me: { role: string; agency_id: string; 
 
   useEffect(() => {
     if (isSuperAdmin) {
-      apiGet<any[]>('/api/agencies').then(d => setAgencies(Array.isArray(d) ? d : []))
+      apiGet<any>('/api/agencies').then(d => {
+        const list = Array.isArray(d) ? d : (d?.agencies ?? [])
+        setAgencies(list)
+      })
     }
   }, [isSuperAdmin])
 
