@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
-  Trophy, RefreshCw, Shield, MapPin, Briefcase,
+  Trophy, RefreshCw, MapPin, Briefcase,
   BarChart3, AlertCircle, ChevronLeft,
 } from 'lucide-react'
 import { apiGet, apiPost } from '../lib/api'
@@ -365,16 +365,23 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
       <header style={{ position: 'sticky', top: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 32px', height: 64, gap: 12, flexWrap: 'wrap',
         background: '#1a0d42', borderBottom: '1px solid rgba(255,255,255,.09)', boxShadow: '0 2px 16px rgba(0,0,0,.4)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 50, height: 50, borderRadius: 12, background: 'linear-gradient(135deg,#7c3aed,#5b21b6)',
-            boxShadow: '0 4px 20px rgba(139,92,246,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Shield style={{ width: 26, height: 26, color: '#fff' }} />
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* SVG shield — same as dashboard sidebar logo */}
+          <svg width="28" height="32" viewBox="0 0 36 40" fill="none" style={{ flexShrink: 0 }}>
+            <defs>
+              <linearGradient id="lbsg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#4a6cf7"/>
+                <stop offset="100%" stopColor="#9b40f0"/>
+              </linearGradient>
+            </defs>
+            <path d="M18 1L35 7.5V22C35 31.5 27.5 37.5 18 40C8.5 37.5 1 31.5 1 22V7.5L18 1Z" fill="url(#lbsg)"/>
+            <path d="M11 20.5L16 25.5L25 15" stroke="#22c55e" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
           <div>
-            <h1 style={{ fontSize: 'clamp(16px,4vw,26px)', fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-.02em' }}>
+            <h1 style={{ fontSize: 'clamp(14px,3vw,20px)', fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-.02em' }}>
               {data?.agency_name || agencySlug || 'Leaderboard'}
             </h1>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#c4b5fd', letterSpacing: '2px', textTransform: 'uppercase', margin: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.38)', letterSpacing: '.06em', textTransform: 'uppercase', margin: 0 }}>
               Agent Leaderboard
             </p>
           </div>
@@ -424,25 +431,25 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
         ))}
       </div>
 
-      {/* Summary KPI cards */}
+      {/* Summary KPI cards — purple / green / teal matching dashboard accent style */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 24 }}>
-        <div style={{ borderRadius: 18, padding: '24px 28px', position: 'relative', overflow: 'hidden', color: '#fff',
-          background: 'linear-gradient(135deg,#1a0d42,#2a1560)', border: '2px solid rgba(139,92,246,.4)', boxShadow: '0 6px 24px rgba(139,92,246,.12)' }}>
-          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 48, opacity: .5 }}>🏆</span>
-          <div style={{ fontWeight: 700, fontSize: 14, color: '#c4b5fd', letterSpacing: '.05em', marginBottom: 8 }}>Total Deals</div>
-          <div style={{ fontWeight: 900, fontSize: 42, lineHeight: 1 }}>{summaryData.total_deals}</div>
+        <div style={{ borderRadius: 16, padding: '20px 24px', position: 'relative', overflow: 'hidden', color: '#fff',
+          background: 'rgba(139,92,246,.12)', border: '1px solid rgba(255,255,255,.09)', borderTop: '3px solid #8b5cf6' }}>
+          <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 40, opacity: .3 }}>🏆</span>
+          <div style={{ fontWeight: 700, fontSize: 11, color: '#c4b5fd', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6 }}>Total Deals</div>
+          <div style={{ fontWeight: 900, fontSize: 38, lineHeight: 1 }}>{summaryData.total_deals}</div>
         </div>
-        <div style={{ borderRadius: 18, padding: '24px 28px', position: 'relative', overflow: 'hidden', color: '#fff',
-          background: 'linear-gradient(135deg,#2d1a5e,#3b2272)', border: '2px solid rgba(168,85,247,.4)', boxShadow: '0 6px 24px rgba(168,85,247,.12)' }}>
-          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 48, opacity: .5 }}>💰</span>
-          <div style={{ fontWeight: 700, fontSize: 14, color: '#c4b5fd', letterSpacing: '.05em', marginBottom: 8 }}>Total Premium</div>
-          <div style={{ fontWeight: 900, fontSize: 42, lineHeight: 1 }}>{fmt$(summaryData.total_premium)}</div>
+        <div style={{ borderRadius: 16, padding: '20px 24px', position: 'relative', overflow: 'hidden', color: '#fff',
+          background: 'rgba(52,211,153,.10)', border: '1px solid rgba(255,255,255,.09)', borderTop: '3px solid #34d399' }}>
+          <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 40, opacity: .3 }}>💰</span>
+          <div style={{ fontWeight: 700, fontSize: 11, color: '#6ee7b7', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6 }}>Total Premium</div>
+          <div style={{ fontWeight: 900, fontSize: 38, lineHeight: 1 }}>{fmt$(summaryData.total_premium)}</div>
         </div>
-        <div style={{ borderRadius: 18, padding: '24px 28px', position: 'relative', overflow: 'hidden', color: '#fff',
-          background: 'linear-gradient(135deg,#0f2a3a,#124060)', border: '2px solid rgba(6,182,212,.4)', boxShadow: '0 6px 24px rgba(6,182,212,.12)' }}>
-          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 48, opacity: .5 }}>📈</span>
-          <div style={{ fontWeight: 700, fontSize: 14, color: '#5eead4', letterSpacing: '.05em', marginBottom: 8 }}>Avg Premium</div>
-          <div style={{ fontWeight: 900, fontSize: 42, lineHeight: 1 }}>{fmt$(avgPremium)}</div>
+        <div style={{ borderRadius: 16, padding: '20px 24px', position: 'relative', overflow: 'hidden', color: '#fff',
+          background: 'rgba(34,211,238,.10)', border: '1px solid rgba(255,255,255,.09)', borderTop: '3px solid #22d3ee' }}>
+          <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 40, opacity: .3 }}>📈</span>
+          <div style={{ fontWeight: 700, fontSize: 11, color: '#67e8f9', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6 }}>Avg Premium</div>
+          <div style={{ fontWeight: 900, fontSize: 38, lineHeight: 1 }}>{fmt$(avgPremium)}</div>
         </div>
       </div>
 
