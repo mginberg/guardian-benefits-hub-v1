@@ -6,6 +6,7 @@ from app.db_init import init_db
 from app.routers.agencies import router as agencies_router
 from app.routers.auth import router as auth_router
 from app.routers.jobs import router as jobs_router
+from app.routers.leaderboard import router as leaderboard_router
 from app.routers.policy_book import router as policy_book_router
 from app.routers.policy_reports import router as policy_reports_router
 from app.routers.unl import router as unl_router
@@ -40,6 +41,7 @@ app.include_router(auth_router)
 app.include_router(jobs_router)
 app.include_router(unl_router)
 app.include_router(agencies_router)
+app.include_router(leaderboard_router)
 app.include_router(policy_book_router)
 app.include_router(policy_reports_router)
 

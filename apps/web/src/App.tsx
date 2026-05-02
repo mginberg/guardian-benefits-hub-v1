@@ -4,6 +4,7 @@ import { apiGet } from './lib/api'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { AgenciesPage } from './pages/AgenciesPage'
+import { LeaderboardPage } from './pages/LeaderboardPage'
 import { PolicyBookPage } from './pages/PolicyBookPage'
 
 type Me = {
@@ -66,7 +67,8 @@ type NavItem = {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard',    to: '/',                  icon: '⬡' },
+  { label: 'Dashboard',    to: '/',             icon: '⬡' },
+  { label: 'Leaderboard',  to: '/leaderboard',  icon: '🏆' },
   { label: 'Agencies',     to: '/settings/agencies', icon: '🏢', adminOnly: true },
 ]
 
@@ -200,6 +202,18 @@ export function App() {
           me ? (
             <Shell me={me} onLogout={logout} pageTitle="Dashboard">
               <DashboardPage token={token} me={{ role: me.role, agency_id: me.agency_id }} />
+            </Shell>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/leaderboard"
+        element={
+          me ? (
+            <Shell me={me} onLogout={logout} pageTitle="Leaderboard">
+              <LeaderboardPage token={token} me={{ role: me.role, agency_id: me.agency_id }} />
             </Shell>
           ) : (
             <Navigate to="/login" replace />
