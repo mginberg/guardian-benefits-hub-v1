@@ -111,7 +111,7 @@ export function App() {
         element={
           me ? (
             <Shell me={me} onLogout={logout}>
-              <DashboardPage token={token} />
+              <DashboardPage token={token} me={{ role: me.role, agency_id: me.agency_id }} />
             </Shell>
           ) : (
             <Navigate to="/login" replace />

@@ -24,6 +24,16 @@ CONTRACT_REASON_LABELS: dict[str, str] = {
     "PC": "Policy Change",
 }
 
+# Collapse synonymous reason codes so charts don’t duplicate labels.
+# - UNL uses both CA and AC for "Canceled"
+# - UNL uses both RS and RE for "Reinstated"
+REASON_CANONICAL: dict[str, str] = {
+    "CA": "CA",
+    "AC": "CA",
+    "RS": "RS",
+    "RE": "RS",
+}
+
 BAD_REASON_OVERRIDES: dict[str, str] = {
     "LP": "cancelled",
     "CA": "cancelled",
@@ -36,6 +46,35 @@ BAD_REASON_OVERRIDES: dict[str, str] = {
 }
 
 NON_EFFECTUATION_CONFIRMING_CODES = frozenset({"LP", "IC", "NT", "CA", "AC", "OW", "RS", "DE"})
+
+PLAN_CODE_LABELS: dict[str, str] = {
+    "UHIP2": "Hospital Indemnity Shield 2.0",
+    "UNHIP": "Original Hospital Indemnity Shield",
+    "UNCAN": "Cancer Shield 2.0",
+    "UGHIP": "Guaranteed Issue Hospital Indemnity Shield",
+    "UTHHC": "Home Health Care Shield (TCARE)",
+    "UNHHC": "Original Home Health Care Shield",
+    "UNFEL": "Final Expense Shield - Life",
+    "U21DN": "Dental Shield 2.0",
+    "UFGHI": "Guaranteed Issue Hosp Indem w/Assoc - FL",
+    "UFHIP": "Hosp Indem w/Assoc - FL",
+}
+
+
+def plan_label(plan_code: str) -> str:
+    if not plan_code:
+        return "(unknown)"
+    return PLAN_CODE_LABELS.get(plan_code.strip().upper(), plan_code.strip().upper())
+
+
+def is_claim_cancellation(policy: dict) -> bool:
+    """True if a policy's cancellation was a legitimate claim payout (DC).
+
+    Claim payouts should never count against an agent's cancel rate —
+    the policy ended because the insured got paid, not because retention failed.
+    """
+    reason = str(policy.get("cntrct_reason", "") or "").strip().upper()
+    return reason == "DC"
 
 
 def parse_date(raw: str | None) -> Optional[date]:
@@ -110,5 +149,6 @@ def classify_policy(policy: dict, *, today: Optional[date] = None) -> tuple[str,
 
         return (cls, enrich(msg))
 
-    return ("unknown", enrich(f"Unknown contract code '{cntrct}'"))
+    # Unknown contract code — fall back to pending_new for manual review.
+    return ("pending_new", enrich(f"Unknown contract code '{cntrct}' — manual review needed"))
 

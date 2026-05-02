@@ -37,6 +37,17 @@ services:
         sync: false
       - key: BOOTSTRAP_SUPER_ADMIN_PASSWORD
         sync: false
+      # SFTP creds needed for manual import trigger from the UI
+      - key: SFTP_HOST
+        sync: false
+      - key: SFTP_USER
+        sync: false
+      - key: SFTP_PASSWORD
+        sync: false
+      - key: SFTP_REMOTE_DIR
+        sync: false
+      - key: SFTP_FILE_PATTERN
+        sync: false
 
   - type: worker
     name: guardian-benefits-hub-v1-worker
@@ -57,8 +68,6 @@ services:
           name: guardian-benefits-hub-v1-redis
           type: redis
           property: connectionString
-      - key: WEB_ORIGIN
-        value: https://guardian-benefits-hub-v1-web.onrender.com
       - key: JWT_SECRET
         sync: false
       - key: ENCRYPTION_KEY
@@ -67,6 +76,22 @@ services:
         sync: false
       - key: BOOTSTRAP_SUPER_ADMIN_PASSWORD
         sync: false
+      # UNL SFTP credentials — set in Render dashboard, not committed to source
+      - key: SFTP_HOST
+        sync: false
+      - key: SFTP_USER
+        sync: false
+      - key: SFTP_PASSWORD
+        sync: false
+      - key: SFTP_REMOTE_DIR
+        sync: false
+      - key: SFTP_FILE_PATTERN
+        sync: false
+      # Cron schedule (UTC). 11:00 UTC = 7:00 AM ET
+      - key: UNL_IMPORT_CRON_HOUR
+        value: "11"
+      - key: UNL_IMPORT_CRON_MINUTE
+        value: "0"
 
   - type: keyvalue
     name: guardian-benefits-hub-v1-redis
@@ -77,4 +102,3 @@ databases:
   - name: guardian-benefits-hub-v1-db
     plan: basic-256mb
     diskSizeGB: 5
-
