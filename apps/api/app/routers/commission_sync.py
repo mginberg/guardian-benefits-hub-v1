@@ -21,7 +21,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 
-from app.auth import AuthContext, get_auth_context, require_roles
+from app.auth import AuthContext, get_auth_context, require_role
 from app.db import get_db
 from app.ghl_client import get_pit_token
 from app.ids import new_id
@@ -740,7 +740,7 @@ async def upload_commission(
 @router.post("/master-upload")
 async def master_upload(
     files: list[UploadFile] = File(...),
-    ctx: AuthContext = Depends(require_roles(Role.super_admin)),
+    ctx: AuthContext = Depends(require_role(Role.super_admin)),
     db: Session = Depends(get_db),
 ):
     """Guardian master upload — splits rows by agent number → agency prefix."""
