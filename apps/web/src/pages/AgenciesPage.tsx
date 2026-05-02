@@ -11,22 +11,6 @@ type Agency = {
   ghl_pit_token_set: boolean
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        borderRadius: 16,
-        padding: 14,
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
-      }}
-    >
-      <div style={{ fontSize: 12, opacity: 0.75, fontWeight: 900, letterSpacing: 0.2 }}>{title}</div>
-      <div style={{ marginTop: 10 }}>{children}</div>
-    </div>
-  )
-}
-
 export function AgenciesPage({ token }: { token: string }) {
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,6 +28,8 @@ export function AgenciesPage({ token }: { token: string }) {
   const [editPrefix, setEditPrefix] = useState('')
   const [editGhlLocationId, setEditGhlLocationId] = useState('')
   const [editPitToken, setEditPitToken] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveMsg, setSaveMsg] = useState('')
 
   async function refresh() {
     setError('')
@@ -71,179 +57,155 @@ export function AgenciesPage({ token }: { token: string }) {
     setEditPrefix(selected.unl_prefix || '')
     setEditGhlLocationId(selected.ghl_location_id || '')
     setEditPitToken('')
-  }, [selected?.id])
+    setSaveMsg('')
+  }, [selected?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (loading) return <div style={{ opacity: 0.8 }}>Loading…</div>
+  if (loading) return <div style={{ color: 'var(--text-muted)' }}>Loading…</div>
 
   return (
-    <div style={{ display: 'grid', gap: 14 }}>
+    <div style={{ display: 'grid', gap: 'var(--sp-5)' }}>
       <div>
-        <div style={{ fontSize: 22, fontWeight: 950 }}>Agencies</div>
-        <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
-          Configure UNL routing + connect GoHighLevel per agency. Secrets are stored encrypted; we never show tokens back once saved.
+        <div className="pageTitle">Agencies</div>
+        <div className="pageSub">
+          Configure UNL routing and GoHighLevel integration per agency. PIT tokens are stored encrypted and never shown again once saved.
         </div>
       </div>
 
-      {error && (
-        <div
-          style={{
-            borderRadius: 14,
-            padding: 12,
-            border: '1px solid rgba(254,202,202,0.35)',
-            background: 'rgba(254,202,202,0.06)',
-            color: '#fecaca',
-            fontSize: 12,
-            fontWeight: 700,
-          }}
-        >
-          {error}
-        </div>
-      )}
+      {error && <div className="alert">{error}</div>}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12 }}>
-        <Card title="Create agency">
-          <div style={{ display: 'grid', gap: 10 }}>
-            <label style={{ display: 'grid', gap: 6, fontSize: 12, opacity: 0.85 }}>
-              Slug (unique)
-              <input
-                value={newSlug}
-                onChange={(e) => setNewSlug(e.target.value)}
-                placeholder="medigap"
-                style={{ padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.18)', color: '#e5e7eb' }}
-              />
-            </label>
-            <label style={{ display: 'grid', gap: 6, fontSize: 12, opacity: 0.85 }}>
-              Name
-              <input
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Medigap"
-                style={{ padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.18)', color: '#e5e7eb' }}
-              />
-            </label>
-            <label style={{ display: 'grid', gap: 6, fontSize: 12, opacity: 0.85 }}>
-              UNL prefix (optional)
-              <input
-                value={newPrefix}
-                onChange={(e) => setNewPrefix(e.target.value)}
-                placeholder="NEW"
-                style={{ padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.18)', color: '#e5e7eb' }}
-              />
-            </label>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--sp-4)', alignItems: 'start' }}>
+
+        {/* Create agency */}
+        <div className="card">
+          <div className="cardInner" style={{ display: 'grid', gap: 'var(--sp-4)' }}>
+            <div className="cardTitle">Create agency</div>
+
+            <div className="field">
+              <label className="fieldLabel">Slug (unique)</label>
+              <input className="input" style={{ width: '100%' }} value={newSlug}
+                onChange={(e) => setNewSlug(e.target.value)} placeholder="medigap" />
+            </div>
+            <div className="field">
+              <label className="fieldLabel">Display name</label>
+              <input className="input" style={{ width: '100%' }} value={newName}
+                onChange={(e) => setNewName(e.target.value)} placeholder="Medigap Agency" />
+            </div>
+            <div className="field">
+              <label className="fieldLabel">UNL prefix (optional)</label>
+              <input className="input" style={{ width: '100%' }} value={newPrefix}
+                onChange={(e) => setNewPrefix(e.target.value)} placeholder="NEW" />
+            </div>
             <button
+              className="btn btnGold"
+              style={{ justifyContent: 'center' }}
               onClick={async () => {
                 setError('')
                 try {
                   const created = await apiPost<Agency>('/api/agencies', { slug: newSlug, name: newName, unl_prefix: newPrefix }, token)
                   setAgencies((prev) => [...prev, created].sort((a, b) => a.slug.localeCompare(b.slug)))
                   setSelectedId(created.id)
-                  setNewSlug('')
-                  setNewName('')
-                  setNewPrefix('')
+                  setNewSlug(''); setNewName(''); setNewPrefix('')
                 } catch (e) {
                   setError(e instanceof Error ? e.message : 'Failed to create agency')
                 }
               }}
-              style={{
-                padding: '10px 12px',
-                borderRadius: 12,
-                border: '1px solid rgba(201,168,76,0.35)',
-                background: 'rgba(201,168,76,0.12)',
-                color: '#f5f3e6',
-                fontWeight: 900,
-                cursor: 'pointer',
-              }}
             >
-              Create
+              Create agency
             </button>
           </div>
-        </Card>
+        </div>
 
-        <Card title="Agency list">
-          {!agencies.length ? (
-            <div style={{ fontSize: 12, opacity: 0.75 }}>No agencies yet.</div>
-          ) : (
-            <div style={{ display: 'grid', gap: 6 }}>
-              {agencies.map((a) => (
-                <button
-                  key={a.id}
-                  onClick={() => setSelectedId(a.id)}
-                  style={{
-                    textAlign: 'left',
-                    padding: '10px 10px',
-                    borderRadius: 12,
-                    border: a.id === selectedId ? '1px solid rgba(201,168,76,0.35)' : '1px solid rgba(255,255,255,0.10)',
-                    background: a.id === selectedId ? 'rgba(201,168,76,0.10)' : 'rgba(0,0,0,0.14)',
-                    color: '#e5e7eb',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 900 }}>{a.name}</div>
-                      <div style={{ fontSize: 12, opacity: 0.75 }}>{a.slug}</div>
-                    </div>
-                    <div style={{ fontSize: 11, opacity: 0.8, textAlign: 'right' }}>
-                      <div>{a.is_active ? 'Active' : 'Inactive'}</div>
-                      <div>{a.ghl_pit_token_set ? 'GHL: connected' : 'GHL: not set'}</div>
-                    </div>
-                  </div>
-                </button>
-              ))}
+        {/* Agency list */}
+        <div className="card">
+          <div className="cardInner">
+            <div className="cardTitle" style={{ marginBottom: 'var(--sp-3)' }}>
+              All agencies ({agencies.length})
             </div>
-          )}
-        </Card>
+            {!agencies.length ? (
+              <div style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>No agencies yet.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: 'var(--sp-2)' }}>
+                {agencies.map((a) => (
+                  <button
+                    key={a.id}
+                    onClick={() => setSelectedId(a.id)}
+                    style={{
+                      textAlign: 'left',
+                      padding: 'var(--sp-3)',
+                      borderRadius: 'var(--radius-md)',
+                      border: a.id === selectedId ? '1px solid var(--gold-border)' : '1px solid var(--border)',
+                      background: a.id === selectedId ? 'var(--gold-bg)' : 'rgba(0,0,0,.18)',
+                      color: 'var(--text)',
+                      cursor: 'pointer',
+                      transition: 'border-color .12s, background .12s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--sp-2)', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>{a.name}</div>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-faint)' }}>{a.slug} · {a.unl_prefix || 'no prefix'}</div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
+                        <span className={`badge ${a.is_active ? 'badgeGreen' : 'badgeOrange'}`}>
+                          {a.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                        <span className={`badge ${a.ghl_pit_token_set ? 'badgeBlue' : 'badgeOrange'}`} style={{ fontSize: 10 }}>
+                          {a.ghl_pit_token_set ? 'GHL ✓' : 'GHL ✗'}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
-        <Card title="Edit selected">
-          {!selected ? (
-            <div style={{ fontSize: 12, opacity: 0.75 }}>Select an agency to edit.</div>
-          ) : (
-            <div style={{ display: 'grid', gap: 10 }}>
-              <label style={{ display: 'grid', gap: 6, fontSize: 12, opacity: 0.85 }}>
-                Name
-                <input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  style={{ padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.18)', color: '#e5e7eb' }}
-                />
-              </label>
+        {/* Edit selected */}
+        <div className="card">
+          <div className="cardInner">
+            <div className="cardTitle" style={{ marginBottom: 'var(--sp-4)' }}>
+              {selected ? `Edit: ${selected.name}` : 'Edit selected'}
+            </div>
+            {!selected ? (
+              <div style={{ color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>Select an agency from the list.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: 'var(--sp-3)' }}>
+                <div className="field">
+                  <label className="fieldLabel">Display name</label>
+                  <input className="input" style={{ width: '100%' }} value={editName}
+                    onChange={(e) => setEditName(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label className="fieldLabel">Status</label>
+                  <select className="select" style={{ width: '100%' }}
+                    value={editActive ? 'true' : 'false'}
+                    onChange={(e) => setEditActive(e.target.value === 'true')}>
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label className="fieldLabel">UNL prefix</label>
+                  <input className="input" style={{ width: '100%' }} value={editPrefix}
+                    onChange={(e) => setEditPrefix(e.target.value)} placeholder="NEW" />
+                </div>
+                <div className="field">
+                  <label className="fieldLabel">GHL Location ID</label>
+                  <input className="input" style={{ width: '100%' }} value={editGhlLocationId}
+                    onChange={(e) => setEditGhlLocationId(e.target.value)} placeholder="loc_..." />
+                </div>
 
-              <label style={{ display: 'grid', gap: 6, fontSize: 12, opacity: 0.85 }}>
-                Active
-                <select
-                  value={editActive ? 'true' : 'false'}
-                  onChange={(e) => setEditActive(e.target.value === 'true')}
-                  style={{ padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.18)', color: '#e5e7eb' }}
-                >
-                  <option value="true">Active</option>
-                  <option value="false">Inactive</option>
-                </select>
-              </label>
+                {saveMsg && (
+                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--green)', fontWeight: 700 }}>{saveMsg}</div>
+                )}
 
-              <label style={{ display: 'grid', gap: 6, fontSize: 12, opacity: 0.85 }}>
-                UNL prefix
-                <input
-                  value={editPrefix}
-                  onChange={(e) => setEditPrefix(e.target.value)}
-                  placeholder="NEW"
-                  style={{ padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.18)', color: '#e5e7eb' }}
-                />
-              </label>
-
-              <label style={{ display: 'grid', gap: 6, fontSize: 12, opacity: 0.85 }}>
-                GHL Location ID
-                <input
-                  value={editGhlLocationId}
-                  onChange={(e) => setEditGhlLocationId(e.target.value)}
-                  placeholder="..."
-                  style={{ padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.18)', color: '#e5e7eb' }}
-                />
-              </label>
-
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <button
+                  className="btn btnNavy"
+                  style={{ justifyContent: 'center' }}
+                  disabled={saving}
                   onClick={async () => {
-                    setError('')
+                    setSaving(true); setError(''); setSaveMsg('')
                     try {
                       const updated = await apiPatch<Agency>(
                         `/api/agencies/${selected.id}`,
@@ -251,67 +213,46 @@ export function AgenciesPage({ token }: { token: string }) {
                         token,
                       )
                       setAgencies((prev) => prev.map((x) => (x.id === updated.id ? updated : x)).sort((a, b) => a.slug.localeCompare(b.slug)))
+                      setSaveMsg('Saved!')
                     } catch (e) {
                       setError(e instanceof Error ? e.message : 'Failed to save')
-                    }
-                  }}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 12,
-                    border: '1px solid rgba(255,255,255,0.14)',
-                    background: 'rgba(255,255,255,0.06)',
-                    color: '#e5e7eb',
-                    fontWeight: 900,
-                    cursor: 'pointer',
+                    } finally { setSaving(false) }
                   }}
                 >
-                  Save basics
+                  {saving ? 'Saving…' : 'Save changes'}
                 </button>
+
+                <hr className="divider" />
+
+                <div className="field">
+                  <label className="fieldLabel">GHL PIT Token (write-only)</label>
+                  <input className="input" style={{ width: '100%' }} type="password" value={editPitToken}
+                    onChange={(e) => setEditPitToken(e.target.value)}
+                    placeholder={selected.ghl_pit_token_set ? 'Enter new token to rotate' : 'pit-...'} />
+                </div>
                 <button
+                  className="btn btnGold"
+                  style={{ justifyContent: 'center' }}
+                  disabled={!editPitToken.trim() || saving}
                   onClick={async () => {
-                    setError('')
+                    setSaving(true); setError(''); setSaveMsg('')
                     try {
                       await apiPut<Agency>(`/api/agencies/${selected.id}/ghl-token`, { pit_token: editPitToken }, token)
                       setEditPitToken('')
+                      setSaveMsg('PIT token saved!')
                       await refresh()
                     } catch (e) {
                       setError(e instanceof Error ? e.message : 'Failed to set token')
-                    }
-                  }}
-                  disabled={!editPitToken.trim()}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 12,
-                    border: '1px solid rgba(201,168,76,0.35)',
-                    background: editPitToken.trim() ? 'rgba(201,168,76,0.12)' : 'rgba(255,255,255,0.03)',
-                    color: '#f5f3e6',
-                    fontWeight: 900,
-                    cursor: editPitToken.trim() ? 'pointer' : 'not-allowed',
-                    opacity: editPitToken.trim() ? 1 : 0.7,
+                    } finally { setSaving(false) }
                   }}
                 >
-                  Set PIT token
+                  {saving ? 'Saving…' : 'Set PIT token'}
                 </button>
               </div>
-
-              <label style={{ display: 'grid', gap: 6, fontSize: 12, opacity: 0.85 }}>
-                GHL PIT token (write-only)
-                <input
-                  value={editPitToken}
-                  onChange={(e) => setEditPitToken(e.target.value)}
-                  placeholder={selected.ghl_pit_token_set ? 'Token saved (enter a new one to rotate)' : 'pit-...'}
-                  style={{ padding: 10, borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(0,0,0,0.18)', color: '#e5e7eb' }}
-                />
-              </label>
-
-              <div style={{ fontSize: 12, opacity: 0.75 }}>
-                Current status: {selected.ghl_pit_token_set ? 'GHL token set' : 'GHL token not set'}
-              </div>
-            </div>
-          )}
-        </Card>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
 }
-

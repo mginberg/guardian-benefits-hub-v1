@@ -1,61 +1,122 @@
-/* ─── Design tokens ────────────────────────────────────────────────────── */
-:root {
-  --bg0: #070a12;
-  --bg1: #0b1220;
-  --sidebar-w: 220px;
-  --card: rgba(255,255,255,.045);
-  --card2: rgba(255,255,255,.07);
-  --stroke: rgba(255,255,255,.09);
-  --stroke2: rgba(255,255,255,.13);
-  --text: #e7eaf0;
-  --muted: rgba(231,234,240,.72);
-  --muted2: rgba(231,234,240,.50);
-  --gold: #c9a84c;
-  --gold2: rgba(201,168,76,.16);
-  --danger: #fecaca;
-  --shadow: 0 8px 32px rgba(0,0,0,.45);
-  --radius: 16px;
+/*
+ * Guardian Benefits Hub — Design System
+ * Brand: Navy #1a3058 · Gold #c9a84c · Font: Geist
+ * Dark app shell with branded navy sidebar.
+ * ALL design tokens live here. Never use magic numbers in component styles.
+ */
 
-  /* KPI accent palette */
-  --c-blue: #6366f1;
-  --c-blue-bg: rgba(99,102,241,.14);
-  --c-green: #34d399;
-  --c-green-bg: rgba(52,211,153,.12);
-  --c-red: #f87171;
-  --c-red-bg: rgba(248,113,113,.12);
-  --c-orange: #fb923c;
-  --c-orange-bg: rgba(251,146,60,.12);
-  --c-teal: #22d3ee;
-  --c-teal-bg: rgba(34,211,238,.12);
-  --c-purple: #a78bfa;
-  --c-purple-bg: rgba(167,139,250,.12);
+/* ─── Brand tokens ─────────────────────────────────────────────────────────── */
+:root {
+  /* Brand */
+  --navy:        #1a3058;
+  --navy-deep:   #142748;
+  --navy-light:  #243f6e;
+  --navy-mid:    #1e3a6a;
+  --gold:        #c9a84c;
+  --gold-dark:   #b8923b;
+  --gold-bright: #ddb84d;
+  --gold-bg:     rgba(201,168,76,.10);
+  --gold-border: rgba(201,168,76,.28);
+
+  /* App shell */
+  --bg-app:      #060c18;
+  --bg-surface:  #0b1525;
+  --bg-card:     rgba(255,255,255,.042);
+  --bg-card-hover: rgba(255,255,255,.058);
+  --bg-input:    rgba(0,0,0,.38);
+  --sidebar-bg:  #1a3058;   /* exact brand navy */
+  --sidebar-w:   224px;
+
+  /* Typography */
+  --font:        'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --text:        #e8edf5;
+  --text-muted:  rgba(232,237,245,.68);
+  --text-faint:  rgba(232,237,245,.42);
+
+  /* Borders */
+  --border:      rgba(255,255,255,.09);
+  --border-md:   rgba(255,255,255,.13);
+
+  /* Status — vibrant on dark, matching brand palette */
+  --green:       #34d399;
+  --green-bg:    rgba(52,211,153,.12);
+  --green-border:rgba(52,211,153,.22);
+  --red:         #f87171;
+  --red-bg:      rgba(248,113,113,.12);
+  --red-border:  rgba(248,113,113,.22);
+  --orange:      #fb923c;
+  --orange-bg:   rgba(251,146,60,.12);
+  --orange-border:rgba(251,146,60,.22);
+  --blue:        #60a5fa;
+  --blue-bg:     rgba(96,165,250,.12);
+  --blue-border: rgba(96,165,250,.22);
+  --teal:        #22d3ee;
+  --teal-bg:     rgba(34,211,238,.12);
+  --teal-border: rgba(34,211,238,.22);
+  --purple:      #a78bfa;
+  --purple-bg:   rgba(167,139,250,.12);
+  --purple-border:rgba(167,139,250,.22);
+  --amber:       #fbbf24;
+  --amber-bg:    rgba(251,191,36,.12);
+
+  /* Elevation */
+  --shadow-sm:   0 2px 8px rgba(0,0,0,.30);
+  --shadow-md:   0 4px 20px rgba(0,0,0,.40);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,.50);
+
+  /* Spacing scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* Type scale */
+  --text-xs:   11px;
+  --text-sm:   12px;
+  --text-base: 13px;
+  --text-md:   14px;
+  --text-lg:   16px;
+  --text-xl:   20px;
+  --text-2xl:  26px;
+  --text-3xl:  32px;
+
+  /* Radii */
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-xl:  20px;
+  --radius-pill:999px;
 }
 
+/* ─── Reset ────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box }
 html, body { height: 100%; margin: 0 }
+a { color: inherit; text-decoration: none }
+button, input, select, textarea { font: inherit }
+img { display: block; max-width: 100% }
+
 body {
+  font-family: var(--font);
+  font-size: var(--text-base);
+  line-height: 1.55;
   color: var(--text);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial,
-               "Apple Color Emoji", "Segoe UI Emoji";
-  font-size: 14px;
-  line-height: 1.5;
   background:
-    radial-gradient(900px 420px at 12% -10%, rgba(201,168,76,.15), transparent 60%),
-    radial-gradient(900px 420px at 88% -10%, rgba(99,102,241,.15), transparent 60%),
-    radial-gradient(700px 420px at 50% 0%, rgba(34,211,238,.10), transparent 55%),
-    linear-gradient(180deg, var(--bg0), var(--bg1) 45%, #060913 100%);
+    radial-gradient(900px 500px at 0% -5%, rgba(26,48,88,.55) 0%, transparent 60%),
+    radial-gradient(800px 400px at 100% -5%, rgba(201,168,76,.12) 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg-app) 0%, #080f1e 50%, #05080f 100%);
   background-attachment: fixed;
 }
-a { color: inherit; text-decoration: none }
-button, input, select { font: inherit }
 
-/* ─── App shell: sidebar + main ───────────────────────────────────────── */
+/* ─── App shell ────────────────────────────────────────────────────────────── */
 .appShell {
   display: flex;
   min-height: 100vh;
 }
 
-/* ─── Sidebar ──────────────────────────────────────────────────────────── */
+/* ─── Sidebar ──────────────────────────────────────────────────────────────── */
 .sidebar {
   width: var(--sidebar-w);
   flex-shrink: 0;
@@ -65,44 +126,47 @@ button, input, select { font: inherit }
   top: 0;
   height: 100vh;
   overflow-y: auto;
-  background: linear-gradient(180deg, rgba(8,13,24,.96), rgba(7,10,18,.96));
-  border-right: 1px solid var(--stroke);
-  backdrop-filter: blur(12px);
-  padding: 0 0 20px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid rgba(255,255,255,.08);
+  box-shadow: 2px 0 20px rgba(0,0,0,.40);
   z-index: 20;
 }
 
 .sidebarBrand {
-  padding: 20px 18px 16px;
-  border-bottom: 1px solid var(--stroke);
-  margin-bottom: 10px;
+  padding: var(--sp-5) var(--sp-4) var(--sp-4);
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  margin-bottom: var(--sp-2);
 }
 .sidebarLogo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-1);
 }
 .sidebarLogoIcon {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--gold), rgba(201,168,76,.4));
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--navy-deep);
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(201,168,76,.30);
 }
 .sidebarTitle {
-  font-size: 14px;
-  font-weight: 800;
+  font-size: var(--text-sm);
+  font-weight: 700;
   letter-spacing: .1px;
-  line-height: 1.2;
+  line-height: 1.25;
+  color: #fff;
 }
 .sidebarSub {
-  font-size: 11px;
-  color: var(--muted2);
+  font-size: var(--text-xs);
+  color: rgba(255,255,255,.55);
   margin-top: 2px;
 }
 
@@ -111,28 +175,26 @@ button, input, select { font: inherit }
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 0 10px;
+  padding: 0 var(--sp-2);
 }
-
 .sidebarSection {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: .6px;
+  letter-spacing: .7px;
   text-transform: uppercase;
-  color: var(--muted2);
-  padding: 14px 8px 6px;
+  color: rgba(255,255,255,.35);
+  padding: var(--sp-4) var(--sp-2) var(--sp-1);
 }
-
 .sidebarLink {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border-radius: 10px;
-  font-size: 13px;
+  gap: var(--sp-3);
+  padding: 9px var(--sp-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--muted);
-  transition: background .12s ease, color .12s ease;
+  color: rgba(255,255,255,.70);
+  transition: background .12s, color .12s;
   cursor: pointer;
   border: none;
   background: transparent;
@@ -140,16 +202,16 @@ button, input, select { font: inherit }
   text-align: left;
 }
 .sidebarLink:hover {
-  background: rgba(255,255,255,.055);
-  color: var(--text);
+  background: rgba(255,255,255,.08);
+  color: #fff;
 }
 .sidebarLinkActive {
-  background: rgba(201,168,76,.12);
-  color: var(--gold);
-  border: 1px solid rgba(201,168,76,.18);
+  background: rgba(201,168,76,.15);
+  color: var(--gold-bright);
+  border: 1px solid rgba(201,168,76,.20);
 }
 .sidebarLinkActive:hover {
-  background: rgba(201,168,76,.16);
+  background: rgba(201,168,76,.20);
 }
 .sidebarLinkIcon {
   width: 18px;
@@ -159,288 +221,289 @@ button, input, select { font: inherit }
 }
 
 .sidebarFooter {
-  padding: 14px 18px 0;
-  border-top: 1px solid var(--stroke);
-  margin-top: 8px;
+  padding: var(--sp-4);
+  border-top: 1px solid rgba(255,255,255,.10);
+  margin-top: var(--sp-2);
 }
 .sidebarUser {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-2);
 }
 .sidebarAvatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--c-blue), var(--c-purple));
+  background: linear-gradient(135deg, var(--navy-light), var(--purple));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,.14);
 }
-.sidebarUserInfo {
-  flex: 1;
-  min-width: 0;
-}
+.sidebarUserInfo { flex: 1; min-width: 0 }
 .sidebarUserName {
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #fff;
 }
 .sidebarUserRole {
-  font-size: 11px;
-  color: var(--muted2);
+  font-size: 10px;
+  color: rgba(255,255,255,.45);
+  text-transform: capitalize;
 }
 
-/* ─── Main content ─────────────────────────────────────────────────────── */
+/* ─── Main content ─────────────────────────────────────────────────────────── */
 .mainContent {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
 }
-
 .pageHeader {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: linear-gradient(180deg, rgba(7,10,18,.90), rgba(7,10,18,.60));
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--stroke);
-  padding: 14px 28px;
+  background: rgba(6,12,24,.88);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: var(--sp-4) var(--sp-6);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--sp-3);
   min-height: 56px;
 }
-.pageHeaderLeft {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
 .pageHeaderTitle {
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: .15px;
+  font-size: var(--text-md);
+  font-weight: 700;
+  letter-spacing: .1px;
 }
 .pageHeaderSub {
-  font-size: 11px;
-  color: var(--muted2);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  margin-top: 1px;
 }
-
 .container {
-  padding: 24px 28px 48px;
+  padding: var(--sp-6) var(--sp-6) 56px;
   width: 100%;
 }
 
-/* ─── Typography ───────────────────────────────────────────────────────── */
+/* ─── Typography ───────────────────────────────────────────────────────────── */
 .pageTitle {
-  font-size: 22px;
+  font-size: var(--text-xl);
   font-weight: 800;
-  letter-spacing: .15px;
+  letter-spacing: -.1px;
 }
 .pageSub {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 4px;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-top: var(--sp-1);
 }
-
-/* ─── Grids ────────────────────────────────────────────────────────────── */
-.grid   { display: grid; gap: 14px }
-.grid2  { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px }
-.grid3  { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px }
-.grid4  { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px }
-.grid6  { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px }
-
-/* ─── Cards ────────────────────────────────────────────────────────────── */
-.card {
-  border-radius: var(--radius);
-  border: 1px solid var(--stroke);
-  background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.025));
-  box-shadow: var(--shadow);
-}
-.cardInner { padding: 18px }
-.cardTitle {
-  font-size: 11px;
+.label {
+  font-size: var(--text-xs);
   font-weight: 700;
-  letter-spacing: .3px;
   text-transform: uppercase;
-  color: var(--muted2);
+  letter-spacing: .4px;
+  color: var(--text-faint);
 }
 
-/* Accent card variants — stronger top border + visible bg tint */
-.cardBlue   { border-top: 3px solid var(--c-blue);   background: linear-gradient(160deg, rgba(99,102,241,.16), rgba(255,255,255,.025)) }
-.cardGreen  { border-top: 3px solid var(--c-green);  background: linear-gradient(160deg, rgba(52,211,153,.15), rgba(255,255,255,.025)) }
-.cardRed    { border-top: 3px solid var(--c-red);    background: linear-gradient(160deg, rgba(248,113,113,.15), rgba(255,255,255,.025)) }
-.cardOrange { border-top: 3px solid var(--c-orange); background: linear-gradient(160deg, rgba(251,146,60,.15), rgba(255,255,255,.025)) }
-.cardTeal   { border-top: 3px solid var(--c-teal);   background: linear-gradient(160deg, rgba(34,211,238,.15), rgba(255,255,255,.025)) }
-.cardPurple { border-top: 3px solid var(--c-purple); background: linear-gradient(160deg, rgba(167,139,250,.15), rgba(255,255,255,.025)) }
-.cardGold   { border-top: 3px solid var(--gold);     background: linear-gradient(160deg, rgba(201,168,76,.18), rgba(255,255,255,.025)) }
+/* ─── Grids ────────────────────────────────────────────────────────────────── */
+.grid   { display: grid; gap: var(--sp-4) }
+.grid2  { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: var(--sp-4) }
+.grid3  { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: var(--sp-4) }
+.grid4  { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: var(--sp-3) }
+.grid6  { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: var(--sp-3) }
 
-/* ─── KPI ──────────────────────────────────────────────────────────────── */
-.kpi {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 10px;
+/* ─── Cards ────────────────────────────────────────────────────────────────── */
+.card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+  transition: border-color .15s, box-shadow .15s;
 }
-.kpiValue   { font-size: 28px; font-weight: 800; line-height: 1.1; letter-spacing: -.5px }
-.kpiHint    { font-size: 12px; color: rgba(231,234,240,.65) }
-.kpiIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
+.card:hover { border-color: var(--border-md) }
+.cardInner { padding: var(--sp-4) }
+.cardTitle {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .35px;
+  color: var(--text-faint);
 }
-.kpiIconBlue   { background: var(--c-blue-bg);   color: var(--c-blue) }
-.kpiIconGreen  { background: var(--c-green-bg);  color: var(--c-green) }
-.kpiIconRed    { background: var(--c-red-bg);    color: var(--c-red) }
-.kpiIconOrange { background: var(--c-orange-bg); color: var(--c-orange) }
-.kpiIconTeal   { background: var(--c-teal-bg);   color: var(--c-teal) }
-.kpiIconPurple { background: var(--c-purple-bg); color: var(--c-purple) }
-.kpiIconGold   { background: var(--gold2);       color: var(--gold) }
 
-/* ─── Buttons ──────────────────────────────────────────────────────────── */
+/* Accent card variants — top border stripe + tinted background */
+.cardGreen  { border-top: 3px solid var(--green);  background: linear-gradient(160deg, var(--green-bg),  rgba(255,255,255,.02)) }
+.cardRed    { border-top: 3px solid var(--red);    background: linear-gradient(160deg, var(--red-bg),    rgba(255,255,255,.02)) }
+.cardOrange { border-top: 3px solid var(--orange); background: linear-gradient(160deg, var(--orange-bg), rgba(255,255,255,.02)) }
+.cardBlue   { border-top: 3px solid var(--blue);   background: linear-gradient(160deg, var(--blue-bg),   rgba(255,255,255,.02)) }
+.cardTeal   { border-top: 3px solid var(--teal);   background: linear-gradient(160deg, var(--teal-bg),   rgba(255,255,255,.02)) }
+.cardPurple { border-top: 3px solid var(--purple); background: linear-gradient(160deg, var(--purple-bg), rgba(255,255,255,.02)) }
+.cardGold   { border-top: 3px solid var(--gold);   background: linear-gradient(160deg, var(--gold-bg),   rgba(255,255,255,.02)) }
+
+/* ─── KPI ──────────────────────────────────────────────────────────────────── */
+.kpi { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-2); margin-top: var(--sp-2) }
+.kpiValue { font-size: var(--text-2xl); font-weight: 800; line-height: 1.1; letter-spacing: -.5px }
+.kpiHint  { font-size: var(--text-xs); color: var(--text-faint) }
+
+/* ─── Buttons ──────────────────────────────────────────────────────────────── */
 .btn {
-  padding: 9px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--stroke2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 8px var(--sp-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-md);
   background: rgba(255,255,255,.05);
   color: var(--text);
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  transition: transform .12s ease, background .12s ease, border-color .12s ease;
-  white-space: nowrap;
-}
-.btn:hover  { transform: translateY(-1px); background: rgba(255,255,255,.08) }
-.btn:disabled { opacity: .4; cursor: default; transform: none }
-.btnGhost { background: transparent }
-.btnGold  { border-color: rgba(201,168,76,.34); background: rgba(201,168,76,.12) }
-.btnGold:hover { background: rgba(201,168,76,.18) }
-.btnDanger { border-color: rgba(248,113,113,.34); background: rgba(248,113,113,.10); color: var(--c-red) }
-
-/* ─── Filters / form ───────────────────────────────────────────────────── */
-.filters {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.field {
-  display: grid;
-  gap: 5px;
-  font-size: 11px;
+  font-size: var(--text-sm);
   font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .12s, border-color .12s, transform .12s;
+}
+.btn:hover   { background: rgba(255,255,255,.09); transform: translateY(-1px) }
+.btn:active  { transform: translateY(0) }
+.btn:disabled { opacity: .38; cursor: default; transform: none }
+.btnGhost { background: transparent; border-color: transparent }
+.btnGhost:hover { background: rgba(255,255,255,.06); border-color: var(--border) }
+.btnGold {
+  border-color: var(--gold-border);
+  background: var(--gold-bg);
+  color: var(--gold-bright);
+}
+.btnGold:hover { background: rgba(201,168,76,.16); border-color: rgba(201,168,76,.38) }
+.btnNavy {
+  border-color: rgba(26,48,88,.60);
+  background: var(--navy);
+  color: #fff;
+}
+.btnNavy:hover { background: var(--navy-light) }
+.btnDanger { border-color: var(--red-border); background: var(--red-bg); color: var(--red) }
+
+/* ─── Form fields ──────────────────────────────────────────────────────────── */
+.filters { display: flex; align-items: flex-end; gap: var(--sp-3); flex-wrap: wrap }
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fieldLabel {
+  font-size: var(--text-xs);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .3px;
-  color: var(--muted2);
+  letter-spacing: .35px;
+  color: var(--text-faint);
 }
 .input, .select {
-  height: 40px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(0,0,0,.40);
+  height: 38px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-md);
+  background: var(--bg-input);
   color: var(--text);
+  font-size: var(--text-sm);
   outline: none;
-  font-size: 13px;
+  transition: border-color .12s, box-shadow .12s;
 }
 .input:focus, .select:focus {
-  border-color: rgba(201,168,76,.44);
+  border-color: rgba(201,168,76,.50);
   box-shadow: 0 0 0 3px rgba(201,168,76,.10);
 }
-/* Ensure dropdown options are readable on all platforms */
-.select option {
-  background: #0d1525;
-  color: #e7eaf0;
-}
+.input[type="date"] { color-scheme: dark }
+.select option { background: #0d1a2e; color: var(--text) }
 
-/* ─── Pills / tabs ─────────────────────────────────────────────────────── */
-.pillRow { display: flex; gap: 6px; flex-wrap: wrap }
+/* ─── Pills / tabs ─────────────────────────────────────────────────────────── */
+.pillRow { display: flex; gap: var(--sp-2); flex-wrap: wrap }
 .pill {
-  padding: 7px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--stroke);
-  background: rgba(255,255,255,.04);
-  color: var(--muted);
-  font-weight: 700;
-  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
   cursor: pointer;
   transition: background .1s, color .1s, border-color .1s;
 }
-.pill:hover { background: rgba(255,255,255,.07); color: var(--text) }
-.pillActive {
-  border-color: rgba(201,168,76,.35);
-  background: rgba(201,168,76,.12);
-  color: var(--gold);
-}
+.pill:hover  { background: rgba(255,255,255,.07); color: var(--text) }
+.pillActive  { border-color: var(--gold-border); background: var(--gold-bg); color: var(--gold-bright) }
 
-/* ─── Alert ────────────────────────────────────────────────────────────── */
+/* ─── Badges ───────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: .1px;
+}
+.badgeGreen  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border) }
+.badgeRed    { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red-border) }
+.badgeOrange { background: var(--orange-bg); color: var(--orange); border: 1px solid var(--orange-border) }
+.badgeBlue   { background: var(--blue-bg);   color: var(--blue);   border: 1px solid var(--blue-border) }
+.badgeGold   { background: var(--gold-bg);   color: var(--gold-bright); border: 1px solid var(--gold-border) }
+
+/* ─── Alert ────────────────────────────────────────────────────────────────── */
 .alert {
-  font-size: 12px;
-  color: var(--danger);
-  border: 1px solid rgba(254,202,202,.30);
-  background: rgba(254,202,202,.06);
-  padding: 12px 14px;
-  border-radius: 12px;
+  font-size: var(--text-sm);
+  color: var(--red);
+  border: 1px solid var(--red-border);
+  background: var(--red-bg);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius-md);
 }
 
-/* ─── Bar chart ─────────────────────────────────────────────────────────── */
-.bar {
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.07);
-  overflow: hidden;
-}
-.barFill {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(201,168,76,.85), rgba(201,168,76,.30));
-}
-.barFillGreen  { background: linear-gradient(90deg, rgba(52,211,153,.90), rgba(52,211,153,.30)) }
-.barFillRed    { background: linear-gradient(90deg, rgba(248,113,113,.90), rgba(248,113,113,.30)) }
-.barFillOrange { background: linear-gradient(90deg, rgba(251,146,60,.90), rgba(251,146,60,.30)) }
+/* ─── Rate bars ────────────────────────────────────────────────────────────── */
+.bar { height: 8px; border-radius: var(--radius-pill); background: rgba(255,255,255,.07); overflow: hidden }
+.barFill        { height: 100%; border-radius: var(--radius-pill); background: linear-gradient(90deg, rgba(201,168,76,.85), rgba(201,168,76,.28)) }
+.barFillGreen   { background: linear-gradient(90deg, rgba(52,211,153,.90),  rgba(52,211,153,.25)) }
+.barFillRed     { background: linear-gradient(90deg, rgba(248,113,113,.90), rgba(248,113,113,.25)) }
+.barFillOrange  { background: linear-gradient(90deg, rgba(251,146,60,.90),  rgba(251,146,60,.25)) }
 
-/* ─── Table ────────────────────────────────────────────────────────────── */
-.tableWrap  { overflow-x: auto }
-.table      { width: 100%; border-collapse: separate; border-spacing: 0 }
+/* ─── Tables ───────────────────────────────────────────────────────────────── */
+.tableWrap { overflow-x: auto }
+.table     { width: 100%; border-collapse: separate; border-spacing: 0 }
 .th {
   text-align: left;
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .3px;
-  color: var(--muted2);
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255,255,255,.08);
+  color: var(--text-faint);
+  padding: var(--sp-3) var(--sp-3);
+  border-bottom: 1px solid var(--border);
   white-space: nowrap;
+  background: rgba(0,0,0,.15);
 }
 .td {
-  font-size: 13px;
-  padding: 11px 12px;
-  border-bottom: 1px solid rgba(255,255,255,.05);
-  color: rgba(231,234,240,.90);
+  font-size: var(--text-sm);
+  padding: 10px var(--sp-3);
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  color: rgba(232,237,245,.88);
 }
-.tdStrong { font-weight: 700 }
-tr:hover .td { background: rgba(255,255,255,.03) }
-/* Zebra striping for data-heavy tables */
-.tableZebra tbody tr:nth-child(even) td { background: rgba(255,255,255,.025) }
-.tableZebra tbody tr:nth-child(even):hover td { background: rgba(255,255,255,.045) }
+.tdStrong  { font-weight: 700 }
+.tdGreen   { color: var(--green) }
+.tdRed     { color: var(--red) }
+.tdOrange  { color: var(--orange) }
+tr:hover .td { background: rgba(255,255,255,.025) }
+/* Zebra striping */
+.tableZebra tbody tr:nth-child(even) td     { background: rgba(255,255,255,.022) }
+.tableZebra tbody tr:nth-child(even):hover .td { background: rgba(255,255,255,.04) }
 
-/* ─── Skeleton loader ──────────────────────────────────────────────────── */
+/* ─── Divider ──────────────────────────────────────────────────────────────── */
+.divider { border: none; border-top: 1px solid var(--border); margin: var(--sp-4) 0 }
+
+/* ─── Skeleton ─────────────────────────────────────────────────────────────── */
 .skeleton {
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: linear-gradient(90deg,
     rgba(255,255,255,.04) 0%,
     rgba(255,255,255,.09) 50%,
@@ -453,35 +516,14 @@ tr:hover .td { background: rgba(255,255,255,.03) }
   100% { background-position: 200% 0% }
 }
 
-/* ─── Status badge ─────────────────────────────────────────────────────── */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-}
-.badgeGreen  { background: var(--c-green-bg);  color: var(--c-green) }
-.badgeRed    { background: var(--c-red-bg);    color: var(--c-red) }
-.badgeOrange { background: var(--c-orange-bg); color: var(--c-orange) }
-.badgeBlue   { background: var(--c-blue-bg);   color: var(--c-blue) }
-.badgeGold   { background: var(--gold2);       color: var(--gold) }
-
-/* ─── Divider ──────────────────────────────────────────────────────────── */
-.divider {
-  border: none;
-  border-top: 1px solid var(--stroke);
-  margin: 16px 0;
-}
-
-/* ─── Responsive: collapse sidebar on small screens ───────────────────── */
-@media (max-width: 720px) {
+/* ─── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
   .sidebar { display: none }
-  .container { padding: 16px }
+  .container { padding: var(--sp-4) }
+  .pageHeader { padding: var(--sp-3) var(--sp-4) }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebarLink, .btn, .pill { transition: none }
+  .btn, .sidebarLink, .pill { transition: none }
   .skeleton { animation: none }
 }

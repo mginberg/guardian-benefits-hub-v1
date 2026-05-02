@@ -144,8 +144,8 @@ function Tip({ text }: { text?: string }) {
 
 // ── StatCard ──────────────────────────────────────────────────────────────────
 const ACCENT_COLORS: Record<string, string> = {
-  green: 'var(--c-green)', red: 'var(--c-red)', orange: 'var(--c-orange)',
-  blue: 'var(--c-blue)', teal: 'var(--c-teal)', gold: 'var(--gold)', purple: 'var(--c-purple)',
+  green: 'var(--green)', red: 'var(--red)', orange: 'var(--orange)',
+  blue: 'var(--blue)', teal: 'var(--teal)', gold: 'var(--gold)', purple: 'var(--purple)',
 }
 
 function StatCard({
@@ -210,7 +210,7 @@ function StatList({
           background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,.03)',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-            <div style={{ fontSize: 12, color: 'var(--muted)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.label}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.label}>
               {item.label}
             </div>
             <div style={{ fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{item.value.toLocaleString()}</div>
@@ -464,7 +464,7 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
 
   // ── Sync bar ───────────────────────────────────────────────────────────────
   const syncBar = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 0', marginBottom: 20, borderBottom: '1px solid var(--stroke)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 0', marginBottom: 20, borderBottom: '1px solid var(--border)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
         <div className={`badge ${unlStatus?.last_import_at ? 'badgeGreen' : 'badgeOrange'}`}>
           {unlStatus?.last_import_at ? 'SFTP Synced' : 'Not Synced'}
@@ -629,7 +629,7 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
                     height: `${pct}%`, borderRadius: '4px 4px 0 0',
                     background: 'linear-gradient(180deg, rgba(52,211,153,.75) 0%, rgba(52,211,153,.20) 100%)',
                   }} />
-                  <div style={{ fontSize: 9, textAlign: 'center', marginTop: 4, color: 'var(--muted2)' }}>
+                  <div style={{ fontSize: 9, textAlign: 'center', marginTop: 4, color: 'var(--text-faint)' }}>
                     {m.month.slice(5)}
                   </div>
                 </div>
@@ -673,7 +673,7 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
             <div className="cardInner">
               <div className="cardTitle">Underwriting speed (app → issue)</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 8 }}>
-                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--c-teal)' }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--teal)' }}>
                   {(extras.underwriting_speed?.avg_days ?? 0).toFixed(1)}d
                 </div>
                 <div className="kpiHint">avg · n={(extras.underwriting_speed?.sample_size ?? 0).toLocaleString()}</div>
@@ -688,7 +688,7 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
             <div className="cardInner">
               <div className="cardTitle">Cancellation deep-dive</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 8 }}>
-                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--c-orange)' }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--orange)' }}>
                   {(extras.cancellation?.avg_days_on_books ?? 0).toFixed(1)}d
                 </div>
                 <div className="kpiHint">avg days on books</div>
@@ -727,9 +727,9 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
                       <td className="td">{p.total.toLocaleString()}</td>
                       <td className="td">{p.active.toLocaleString()}</td>
                       <td className="td tdStrong">{fmt$(p.active_premium)}</td>
-                      <td className="td" style={{ color: 'var(--c-green)' }}>{fmtPct(p.effectuation_rate)}</td>
-                      <td className="td" style={{ color: 'var(--c-red)' }}>{fmtPct(p.cancel_rate)}</td>
-                      <td className="td" style={{ color: 'var(--c-orange)' }}>{fmtPct(p.non_effectuated_rate)}</td>
+                      <td className="td" style={{ color: 'var(--green)' }}>{fmtPct(p.effectuation_rate)}</td>
+                      <td className="td" style={{ color: 'var(--red)' }}>{fmtPct(p.cancel_rate)}</td>
+                      <td className="td" style={{ color: 'var(--orange)' }}>{fmtPct(p.non_effectuated_rate)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -765,9 +765,9 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
               <td className="td">{a.total.toLocaleString()}</td>
               <td className="td">{a.active.toLocaleString()}</td>
               <td className="td tdStrong">{fmt$(a.active_premium)}</td>
-              <td className="td" style={{ color: 'var(--c-green)' }}>{fmtPct(a.effectuation_rate)}</td>
-              <td className="td" style={{ color: 'var(--c-red)' }}>{fmtPct(a.cancel_rate)}</td>
-              <td className="td" style={{ color: 'var(--c-orange)' }}>{fmtPct(a.non_effectuated_rate)}</td>
+              <td className="td" style={{ color: 'var(--green)' }}>{fmtPct(a.effectuation_rate)}</td>
+              <td className="td" style={{ color: 'var(--red)' }}>{fmtPct(a.cancel_rate)}</td>
+              <td className="td" style={{ color: 'var(--orange)' }}>{fmtPct(a.non_effectuated_rate)}</td>
               <td className="td">{a.pending.toLocaleString()}</td>
               <td className="td">{a.lapsed.toLocaleString()}</td>
             </tr>
@@ -801,8 +801,8 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
               <td className="td">{a.agency_name || a.agency_code || '—'}</td>
               <td className="td">{a.active.toLocaleString()}</td>
               <td className="td tdStrong">{fmt$(a.active_premium)}</td>
-              <td className="td" style={{ color: 'var(--c-green)' }}>{fmtPct(a.effectuation_rate)}</td>
-              <td className="td" style={{ color: 'var(--c-red)' }}>{fmtPct(a.cancel_rate)}</td>
+              <td className="td" style={{ color: 'var(--green)' }}>{fmtPct(a.effectuation_rate)}</td>
+              <td className="td" style={{ color: 'var(--red)' }}>{fmtPct(a.cancel_rate)}</td>
               <td className="td">{a.pending.toLocaleString()}</td>
             </tr>
           ))}
