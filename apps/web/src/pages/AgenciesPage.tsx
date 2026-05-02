@@ -225,6 +225,10 @@ export function AgenciesPage({ token }: { token: string }) {
                 <div style={{ fontSize: 11, opacity: .5, marginTop: 4 }}>
                   Add this to your GHL workflow → Actions → Webhook. Fires instantly when a contact is created/updated.
                 </div>
+
+                <hr className="divider" />
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  GHL Custom Field IDs
                 </div>
                 <button
                   className="btn"
