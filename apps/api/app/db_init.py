@@ -21,6 +21,7 @@ def _run_migrations() -> None:
                 ADD COLUMN IF NOT EXISTS ghl_plan_field_id   VARCHAR  NOT NULL DEFAULT '',
                 ADD COLUMN IF NOT EXISTS ghl_field_map       TEXT     NOT NULL DEFAULT '{}'
         """))
+        # Commission tables use CREATE TABLE IF NOT EXISTS via SQLAlchemy metadata — no ALTER needed
         conn.commit()
 
 

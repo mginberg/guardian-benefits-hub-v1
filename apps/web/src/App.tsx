@@ -6,6 +6,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { AgenciesPage } from './pages/AgenciesPage'
 import { LeaderboardPage } from './pages/LeaderboardPage'
 import { LeaderboardIndexPage } from './pages/LeaderboardIndexPage'
+import { CommissionPage } from './pages/CommissionPage'
 
 type Me = {
   user_id: string
@@ -68,7 +69,8 @@ type NavItem = {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard',    to: '/',             icon: '⬡' },
+  { label: 'Dashboard',    to: '/',                  icon: '⬡' },
+  { label: 'Commissions',  to: '/commissions',       icon: '💳' },
   { label: 'Agencies',     to: '/settings/agencies', icon: '🏢', adminOnly: true },
 ]
 
@@ -233,6 +235,18 @@ export function App() {
       <Route
         path="/policy-book"
         element={<Navigate to="/" replace />}
+      />
+      <Route
+        path="/commissions"
+        element={
+          me ? (
+            <Shell me={me} onLogout={logout} pageTitle="Commission Sync" pageSub="Upload WA · WC · MC statements">
+              <CommissionPage me={me} />
+            </Shell>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
       />
       <Route
         path="/settings/agencies"

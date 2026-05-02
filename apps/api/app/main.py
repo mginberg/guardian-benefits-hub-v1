@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.db_init import init_db
+from app.routers.commission_sync import router as commission_sync_router
 from app.routers.agencies import router as agencies_router
 from app.routers.auth import router as auth_router
 from app.routers.jobs import router as jobs_router
@@ -37,6 +38,7 @@ def health():
     return {"ok": True, "env": settings.env}
 
 
+app.include_router(commission_sync_router)
 app.include_router(auth_router)
 app.include_router(jobs_router)
 app.include_router(unl_router)

@@ -188,6 +188,124 @@ class UnroutedPolicyRow(Base):
     imported_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
 
 
+# ── Commission sync models ─────────────────────────────────────────────────────
+
+class CommissionStatementType(str, enum.Enum):
+    WA = "WA"
+    WC = "WC"
+    MC = "MC"
+    master_WA = "master_WA"
+    master_WC = "master_WC"
+    master_MC = "master_MC"
+
+
+class CommissionSyncLog(Base):
+    """One row per CSV upload (per-agency or master)."""
+    __tablename__ = "commission_sync_logs"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=new_id)
+    agency_id: Mapped[str] = mapped_column(String, ForeignKey("agencies.id"), index=True)
+    statement_type: Mapped[str] = mapped_column(String, index=True)   # WA / WC / MC / master_*
+    file_name: Mapped[str] = mapped_column(String, default="")
+    total_rows: Mapped[int] = mapped_column(Integer, default=0)
+    matched_rows: Mapped[int] = mapped_column(Integer, default=0)
+    unmatched_rows: Mapped[int] = mapped_column(Integer, default=0)
+    chargeback_rows: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+
+    records = relationship("CommissionRecord", back_populates="sync_log")
+    unmatched = relationship("CommissionUnmatched", back_populates="sync_log")
+
+
+class CommissionRecord(Base):
+    """One row per policy per statement source (WA/WC/MC), upserted on each upload."""
+    __tablename__ = "commission_records"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=new_id)
+    agency_id: Mapped[str] = mapped_column(String, ForeignKey("agencies.id"), index=True)
+    sync_log_id: Mapped[str] = mapped_column(String, ForeignKey("commission_sync_logs.id"), index=True)
+
+    policy_number: Mapped[str] = mapped_column(String, index=True)
+    ghl_contact_id: Mapped[str] = mapped_column(String, default="", index=True)
+    statement_source: Mapped[str] = mapped_column(String, default="")   # WA | WC | MC
+
+    # Agent info
+    agent_nbr: Mapped[str] = mapped_column(String, default="")
+    agent_name_full: Mapped[str] = mapped_column(String, default="")
+    insured_name: Mapped[str] = mapped_column(String, default="")
+
+    # Transaction
+    trans_type: Mapped[str] = mapped_column(String, default="")
+    plan_code: Mapped[str] = mapped_column(String, default="")
+
+    # Amounts
+    prem_paid_amt: Mapped[float] = mapped_column(Float, default=0.0)
+    monthly_premium: Mapped[float] = mapped_column(Float, default=0.0)
+    comm_rate: Mapped[float] = mapped_column(Float, default=0.0)
+    comm_prem_amt: Mapped[float] = mapped_column(Float, default=0.0)
+    adv_per: Mapped[float] = mapped_column(Float, default=0.0)
+    advance_amount: Mapped[float] = mapped_column(Float, default=0.0)
+    earned_commission: Mapped[float] = mapped_column(Float, default=0.0)
+    net_owed: Mapped[float] = mapped_column(Float, default=0.0)
+
+    # MC-specific amounts
+    mc_comm_amt: Mapped[float] = mapped_column(Float, default=0.0)
+    mc_comm_amt_due: Mapped[float] = mapped_column(Float, default=0.0)
+    mc_retained_recovery: Mapped[float] = mapped_column(Float, default=0.0)
+    mc_code: Mapped[str] = mapped_column(String, default="")
+    mc_trans_type: Mapped[str] = mapped_column(String, default="")
+
+    # WC-specific
+    wc_trans_type: Mapped[str] = mapped_column(String, default="")
+    wc_code: Mapped[str] = mapped_column(String, default="")
+
+    # Dates
+    effective_date: Mapped[str] = mapped_column(String, default="")
+    paid_to_date: Mapped[str] = mapped_column(String, default="")
+    last_activity_date: Mapped[str] = mapped_column(String, default="")
+
+    # Status
+    status: Mapped[str] = mapped_column(String, default="active", index=True)  # active | chargeback
+    chargeback_amount: Mapped[float] = mapped_column(Float, default=0.0)
+    chargeback_date: Mapped[str] = mapped_column(String, default="")
+    plan_status: Mapped[str] = mapped_column(String, default="")
+
+    # Location / product
+    issue_state: Mapped[str] = mapped_column(String, default="")
+    policy_form: Mapped[str] = mapped_column(String, default="")
+
+    # Payroll flags (never touched by commission upload — payroll module only)
+    paid_to_agent: Mapped[bool] = mapped_column(Boolean, default=False)
+    paid_to_agent_date: Mapped[str] = mapped_column(String, default="")
+    payroll_run_id: Mapped[str] = mapped_column(String, default="")
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+    sync_log = relationship("CommissionSyncLog", back_populates="records")
+
+    __table_args__ = (
+        UniqueConstraint("agency_id", "policy_number", "statement_source",
+                         name="uq_commission_agency_policy_source"),
+        Index("ix_commission_agency_status", "agency_id", "status"),
+    )
+
+
+class CommissionUnmatched(Base):
+    """Policy rows from CSV that could not be matched to a GHL contact."""
+    __tablename__ = "commission_unmatched"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=new_id)
+    agency_id: Mapped[str] = mapped_column(String, ForeignKey("agencies.id"), index=True)
+    sync_log_id: Mapped[str] = mapped_column(String, ForeignKey("commission_sync_logs.id"), index=True)
+    policy_number: Mapped[str] = mapped_column(String, default="", index=True)
+    raw_data: Mapped[str] = mapped_column(Text, default="{}")
+    resolved: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    sync_log = relationship("CommissionSyncLog", back_populates="unmatched")
+
+
 class JobStatus(str, enum.Enum):
     queued = "queued"
     running = "running"
