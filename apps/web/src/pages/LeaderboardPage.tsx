@@ -199,11 +199,10 @@ function SidePanel({ data, accentColor, label, icon }: {
   data: PeriodData; accentColor: string; label: string; icon: string
 }) {
   return (
-    <div style={{ borderRadius: 16, overflow: 'hidden',
-      background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}>
+    <div style={{ borderRadius: 14, overflow: 'hidden',
+      background: 'rgba(255,255,255,.042)', border: '1px solid rgba(255,255,255,.07)', borderTop: `3px solid ${accentColor}` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 22px',
-        background: `linear-gradient(135deg,${accentColor}18,${accentColor}08)`,
-        borderBottom: `1px solid ${accentColor}25` }}>
+        borderBottom: '1px solid rgba(255,255,255,.06)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 40, height: 40, borderRadius: 12,
             background: `${accentColor}20`,
@@ -214,9 +213,9 @@ function SidePanel({ data, accentColor, label, icon }: {
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontWeight: 900, fontSize: 30, color: '#fff' }}>{data.total_deals}</div>
-          <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,.45)' }}>deals</div>
-          {data.total_premium > 0 && <div style={{ fontWeight: 800, fontSize: 13, color: accentColor }}>{fmt$(data.total_premium)}</div>}
+          <div style={{ fontWeight: 900, fontSize: 30, color: accentColor }}>{data.total_deals}</div>
+          <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,.4)' }}>deals</div>
+          {data.total_premium > 0 && <div style={{ fontWeight: 800, fontSize: 13, color: 'rgba(238,241,248,.6)' }}>{fmt$(data.total_premium)}</div>}
         </div>
       </div>
       <div style={{ padding: 10, maxHeight: 380, overflowY: 'auto' }}>
@@ -433,28 +432,28 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
         ))}
       </div>
 
-      {/* Summary KPI cards — muted dark fills with neon glow borders */}
+      {/* Summary KPI cards — exact dashboard card style */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 24 }}>
-        <div style={{ borderRadius: 14, padding: '20px 22px', position: 'relative', overflow: 'hidden', color: '#fff',
-          background: 'linear-gradient(135deg,#2a1355,#3b1d7a)',
-          border: '1.5px solid rgba(167,139,250,.6)', boxShadow: '0 0 18px rgba(139,92,246,.35), inset 0 0 20px rgba(139,92,246,.06)' }}>
-          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 38, opacity: .45 }}>🏆</span>
-          <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,.55)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>Total Deals</div>
-          <div style={{ fontWeight: 900, fontSize: 40, lineHeight: 1 }}>{summaryData.total_deals}</div>
+        <div style={{ borderRadius: 14, padding: '20px 22px', position: 'relative', overflow: 'hidden',
+          background: 'linear-gradient(160deg,rgba(167,139,250,.14),rgba(255,255,255,.02))',
+          border: '1px solid rgba(255,255,255,.07)', borderTop: '3px solid #a78bfa' }}>
+          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 36, opacity: .4 }}>🏆</span>
+          <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(238,241,248,.5)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>Total Deals</div>
+          <div style={{ fontWeight: 900, fontSize: 40, lineHeight: 1, color: '#a78bfa' }}>{summaryData.total_deals}</div>
         </div>
-        <div style={{ borderRadius: 14, padding: '20px 22px', position: 'relative', overflow: 'hidden', color: '#fff',
-          background: 'linear-gradient(135deg,#065f3a,#0d9b5c)',
-          border: '1.5px solid rgba(52,211,153,.6)', boxShadow: '0 0 18px rgba(52,211,153,.3), inset 0 0 20px rgba(52,211,153,.05)' }}>
-          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 38, opacity: .45 }}>💰</span>
-          <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,.55)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>Total Premium</div>
-          <div style={{ fontWeight: 900, fontSize: 40, lineHeight: 1 }}>{fmt$(summaryData.total_premium)}</div>
+        <div style={{ borderRadius: 14, padding: '20px 22px', position: 'relative', overflow: 'hidden',
+          background: 'linear-gradient(160deg,rgba(52,211,153,.14),rgba(255,255,255,.02))',
+          border: '1px solid rgba(255,255,255,.07)', borderTop: '3px solid #34d399' }}>
+          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 36, opacity: .4 }}>💰</span>
+          <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(238,241,248,.5)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>Total Premium</div>
+          <div style={{ fontWeight: 900, fontSize: 40, lineHeight: 1, color: '#34d399' }}>{fmt$(summaryData.total_premium)}</div>
         </div>
-        <div style={{ borderRadius: 14, padding: '20px 22px', position: 'relative', overflow: 'hidden', color: '#fff',
-          background: 'linear-gradient(135deg,#0a2835,#0e3f50)',
-          border: '1.5px solid rgba(34,211,238,.55)', boxShadow: '0 0 18px rgba(34,211,238,.25), inset 0 0 20px rgba(34,211,238,.05)' }}>
-          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 38, opacity: .45 }}>📈</span>
-          <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(255,255,255,.55)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>Avg Premium</div>
-          <div style={{ fontWeight: 900, fontSize: 40, lineHeight: 1 }}>{fmt$(avgPremium)}</div>
+        <div style={{ borderRadius: 14, padding: '20px 22px', position: 'relative', overflow: 'hidden',
+          background: 'linear-gradient(160deg,rgba(34,211,238,.14),rgba(255,255,255,.02))',
+          border: '1px solid rgba(255,255,255,.07)', borderTop: '3px solid #22d3ee' }}>
+          <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', fontSize: 36, opacity: .4 }}>📈</span>
+          <div style={{ fontWeight: 700, fontSize: 11, color: 'rgba(238,241,248,.5)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 8 }}>Avg Premium</div>
+          <div style={{ fontWeight: 900, fontSize: 40, lineHeight: 1, color: '#22d3ee' }}>{fmt$(avgPremium)}</div>
         </div>
       </div>
 
