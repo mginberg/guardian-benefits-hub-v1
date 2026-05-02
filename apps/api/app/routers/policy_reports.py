@@ -45,7 +45,11 @@ def _resolve_scope_agencies(
     agency_slug: str,
     agency_id_override: Optional[str],
 ) -> tuple[Agency, list[Agency]]:
-    """Scope logic: admins see only their agency; super_admins see all (when slug=guardian) or one."""
+    """Scope logic: admins see only their agency; super_admins see all (when slug=guardian) or one.
+
+    The 'guardian' magic slug means "all active agencies." It does not require an agency row
+    with that slug to exist — we fall back to the first active agency as the nominal primary.
+    """
     if ctx.role == "admin":
         agency = db.execute(select(Agency).where(Agency.id == ctx.agency_id)).scalar_one_or_none()
         if not agency:
@@ -55,18 +59,26 @@ def _resolve_scope_agencies(
     if ctx.role != "super_admin":
         raise HTTPException(status_code=403, detail="Forbidden")
 
-    primary = _resolve_agency_for_slug(db, agency_slug)
+    # "guardian" = all active agencies view; no agency with slug "guardian" needs to exist
+    if agency_slug == "guardian":
+        all_active = db.execute(select(Agency).where(Agency.is_active == True)).scalars().all()  # noqa: E712
+        if not all_active:
+            raise HTTPException(status_code=404, detail="No active agencies found")
+        if agency_id_override:
+            override = next((a for a in all_active if a.id == agency_id_override), None)
+            if not override:
+                raise HTTPException(status_code=404, detail="Agency not found")
+            return override, [override]
+        primary = next((a for a in all_active if a.slug == "guardian"), all_active[0])
+        return primary, all_active
 
+    # Specific agency slug requested
+    primary = _resolve_agency_for_slug(db, agency_slug)
     if agency_id_override:
         override = db.execute(select(Agency).where(Agency.id == agency_id_override)).scalar_one_or_none()
         if not override:
             raise HTTPException(status_code=404, detail="Agency not found")
         return override, [override]
-
-    if agency_slug == "guardian":
-        agencies = db.execute(select(Agency).where(Agency.is_active == True)).scalars().all()  # noqa: E712
-        return primary, agencies
-
     return primary, [primary]
 
 

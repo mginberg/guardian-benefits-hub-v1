@@ -201,20 +201,33 @@ function KpiCard({
   title,
   value,
   hint,
+  accent,
+  icon,
   onClick,
 }: {
   title: string
   value: string
   hint?: string
+  accent?: 'blue' | 'green' | 'red' | 'orange' | 'teal' | 'purple' | 'gold'
+  icon?: string
   onClick?: () => void
 }) {
+  const accentClass = accent ? ` card${accent.charAt(0).toUpperCase() + accent.slice(1)}` : ''
+  const iconClass = accent ? `kpiIcon kpiIcon${accent.charAt(0).toUpperCase() + accent.slice(1)}` : 'kpiIcon'
   return (
-    <div className="card" style={onClick ? { cursor: 'pointer' } : undefined} onClick={onClick}>
+    <div
+      className={`card${accentClass}`}
+      style={onClick ? { cursor: 'pointer' } : undefined}
+      onClick={onClick}
+    >
       <div className="cardInner">
-        <div className="cardTitle">{title}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div className="cardTitle">{title}</div>
+          {icon && <div className={iconClass}>{icon}</div>}
+        </div>
         <div className="kpi">
           <div className="kpiValue">{value}</div>
-          {hint ? <div className="kpiHint">{hint}</div> : <div />}
+          {hint && <div className="kpiHint">{hint}</div>}
         </div>
       </div>
     </div>
@@ -376,11 +389,6 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
 
   return (
     <div className="grid" style={{ gap: 16 }}>
-      <div>
-        <div className="pageTitle">Dashboard</div>
-        <div className="pageSub">UNL policy book insights + import health.</div>
-      </div>
-
       <div className="grid2">
         <div className="card">
           <div className="cardInner">
@@ -583,41 +591,47 @@ export function DashboardPage({ token, me }: { token: string; me: MeLite }) {
             <div className="alert" style={{ marginTop: 12 }}>No policy book data yet. Run a UNL import.</div>
           ) : (
             <>
-              <div className="grid2" style={{ marginTop: 12 }}>
+              <div className="grid6" style={{ marginTop: 12 }}>
                 <KpiCard
                   title="Total Policies"
                   value={stats.total_policies.toLocaleString()}
                   hint={formatCurrency(stats.total_premium)}
+                  accent="blue" icon="📊"
                   onClick={() => fetchDrill([], 'All Policies', 1)}
                 />
                 <KpiCard
                   title="Active"
                   value={stats.active_count.toLocaleString()}
                   hint={`${formatPct(stats.effectuation_rate)} eff`}
+                  accent="green" icon="✅"
                   onClick={() => fetchDrill(['active'], 'Active Policies', 1)}
                 />
                 <KpiCard
                   title="Cancelled"
                   value={stats.cancelled_count.toLocaleString()}
                   hint={`${formatPct(stats.cancel_rate)} cancel`}
+                  accent="red" icon="✗"
                   onClick={() => fetchDrill(['terminated', 'lapsed'], 'Cancelled (Terminated + Lapsed)', 1)}
                 />
                 <KpiCard
                   title="Non-Effectuated"
                   value={stats.non_effectuated_count.toLocaleString()}
                   hint={`${formatPct(stats.non_effectuated_rate)} non-eff`}
+                  accent="orange" icon="⚠"
                   onClick={() => fetchDrill(['non_effectuated'], 'Non-Effectuated', 1)}
                 />
                 <KpiCard
                   title="Pending Pipeline"
                   value={stats.pending_pipeline.toLocaleString()}
                   hint={`${stats.pending_new_count} new · ${stats.pending_payment_count} pay`}
+                  accent="gold" icon="⏳"
                   onClick={() => fetchDrill(['pending_new', 'pending_payment', 'future_effective'], 'Pending Pipeline', 1)}
                 />
                 <KpiCard
                   title="Active Premium"
                   value={formatCurrency(stats.active_premium)}
                   hint={`avg ${formatCurrency(stats.avg_premium)}`}
+                  accent="teal" icon="$"
                   onClick={() => fetchDrill(['active'], 'Active Policies', 1)}
                 />
               </div>

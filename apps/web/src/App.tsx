@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link, Navigate, Route, Routes } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { apiGet } from './lib/api'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
@@ -42,9 +42,7 @@ function useSession() {
       }
     }
     load()
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [token])
 
   const login = (newToken: string) => {
@@ -60,37 +58,99 @@ function useSession() {
   return { token, me, loading, login, logout }
 }
 
-function Shell({ children, me, onLogout }: { children: React.ReactNode; me: Me; onLogout: () => void }) {
+type NavItem = {
+  label: string
+  to: string
+  icon: string
+  adminOnly?: boolean
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { label: 'Dashboard',    to: '/',                 icon: '⬡' },
+  { label: 'Policy Book',  to: '/policy-book',      icon: '📋' },
+  { label: 'Agencies',     to: '/settings/agencies', icon: '🏢', adminOnly: true },
+]
+
+function Sidebar({ me, onLogout }: { me: Me; onLogout: () => void }) {
+  const location = useLocation()
+  const initials = (me.display_name || me.email || '?')
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() || '')
+    .join('')
+
   return (
-    <div className="appShell">
-      <div className="topbar">
-        <div className="topbarInner">
-          <div className="brand">
-            <div className="brandTitle">Guardian Benefits Hub</div>
-            <div className="brandMeta">
-              {me.display_name || me.email} · {me.role}
-              {me.impersonated_by ? ' · impersonating (read-only)' : ''}
-            </div>
-            <div className="nav">
-              <Link to="/" className="navLink">
-                Dashboard
-              </Link>
-              <Link to="/policy-book" className="navLink navLinkPrimary">
-                Policy Book
-              </Link>
-              {me.role === 'super_admin' && (
-                <Link to="/settings/agencies" className="navLink">
-                  Agencies
-                </Link>
-              )}
-            </div>
-          </div>
-          <button onClick={onLogout} className="btn btnGhost">
-            Logout
-          </button>
+    <aside className="sidebar">
+      <div className="sidebarBrand">
+        <div className="sidebarLogo">
+          <div className="sidebarLogoIcon">G</div>
+          <div className="sidebarTitle">Guardian<br />Benefits Hub</div>
         </div>
       </div>
-      <div className="container">{children}</div>
+
+      <nav className="sidebarNav">
+        <div className="sidebarSection">Navigation</div>
+        {NAV_ITEMS.filter((item) => !item.adminOnly || me.role === 'super_admin').map((item) => {
+          const active = item.to === '/'
+            ? location.pathname === '/'
+            : location.pathname.startsWith(item.to)
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={`sidebarLink${active ? ' sidebarLinkActive' : ''}`}
+            >
+              <span className="sidebarLinkIcon">{item.icon}</span>
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
+
+      <div className="sidebarFooter">
+        <div className="sidebarUser">
+          <div className="sidebarAvatar">{initials}</div>
+          <div className="sidebarUserInfo">
+            <div className="sidebarUserName">{me.display_name || me.email}</div>
+            <div className="sidebarUserRole">{me.role.replace('_', ' ')}</div>
+          </div>
+        </div>
+        <button
+          className="btn btnGhost"
+          style={{ width: '100%', marginTop: 10, fontSize: 12, padding: '7px 10px' }}
+          onClick={onLogout}
+        >
+          Sign out
+        </button>
+      </div>
+    </aside>
+  )
+}
+
+function Shell({ children, me, onLogout, pageTitle, pageSub }: {
+  children: React.ReactNode
+  me: Me
+  onLogout: () => void
+  pageTitle?: string
+  pageSub?: string
+}) {
+  return (
+    <div className="appShell">
+      <Sidebar me={me} onLogout={onLogout} />
+      <div className="mainContent">
+        {pageTitle && (
+          <header className="pageHeader">
+            <div className="pageHeaderLeft">
+              <div className="pageHeaderTitle">{pageTitle}</div>
+              {pageSub && <div className="pageHeaderSub">{pageSub}</div>}
+            </div>
+            {me.impersonated_by && (
+              <div className="badge badgeOrange">View-only (impersonating)</div>
+            )}
+          </header>
+        )}
+        <div className="container">{children}</div>
+      </div>
     </div>
   )
 }
@@ -98,7 +158,13 @@ function Shell({ children, me, onLogout }: { children: React.ReactNode; me: Me; 
 export function App() {
   const { token, me, loading, login, logout } = useSession()
 
-  if (loading) return <div style={{ padding: 24, opacity: 0.8 }}>Loading…</div>
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', opacity: .6 }}>
+        Loading…
+      </div>
+    )
+  }
 
   return (
     <Routes>
@@ -110,20 +176,8 @@ export function App() {
         path="/"
         element={
           me ? (
-            <Shell me={me} onLogout={logout}>
+            <Shell me={me} onLogout={logout} pageTitle="Dashboard" pageSub="UNL policy book · sync health">
               <DashboardPage token={token} me={{ role: me.role, agency_id: me.agency_id }} />
-            </Shell>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/settings/agencies"
-        element={
-          me ? (
-            <Shell me={me} onLogout={logout}>
-              <AgenciesPage token={token} />
             </Shell>
           ) : (
             <Navigate to="/login" replace />
@@ -134,8 +188,20 @@ export function App() {
         path="/policy-book"
         element={
           me ? (
-            <Shell me={me} onLogout={logout}>
+            <Shell me={me} onLogout={logout} pageTitle="Policy Book" pageSub="Filter and explore policies">
               <PolicyBookPage token={token} me={{ role: me.role, agency_id: me.agency_id }} />
+            </Shell>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/settings/agencies"
+        element={
+          me ? (
+            <Shell me={me} onLogout={logout} pageTitle="Agencies" pageSub="Manage agency configuration">
+              <AgenciesPage token={token} />
             </Shell>
           ) : (
             <Navigate to="/login" replace />
@@ -146,4 +212,3 @@ export function App() {
     </Routes>
   )
 }
-
