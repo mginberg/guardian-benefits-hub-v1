@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.auth import AuthContext, require_role
 from app.config import settings
 from app.db import get_db
-from app.ghl_sync import sync_agency, sync_all_agencies, upsert_from_webhook_payload
+from app.ghl_sync import discover_and_save_fields, sync_agency, sync_all_agencies, upsert_from_webhook_payload
 from app.models import Agency, LeaderboardContact
 
 log = logging.getLogger(__name__)
@@ -280,3 +280,49 @@ async def sync_all(
     """Super-admin: trigger immediate GHL sync for all agencies."""
     result = await sync_all_agencies(db)
     return {"ok": True, "results": result}
+
+
+@router.post("/discover-fields/{agency_slug}")
+async def discover_fields(
+    agency_slug: str,
+    db: Session = Depends(get_db),
+    ctx: AuthContext = Depends(require_role("super_admin")),
+):
+    """Super-admin: auto-discover GHL custom field IDs for an agency.
+
+    Uses the agency's PIT token to query GHL for all custom fields and
+    automatically maps Agent Name, Monthly Premium, Plan Name, etc.
+    """
+    agency = db.execute(
+        select(Agency).where(Agency.slug == agency_slug)
+    ).scalar_one_or_none()
+    if not agency:
+        raise HTTPException(status_code=404, detail="Agency not found")
+
+    result = await discover_and_save_fields(db, agency)
+    return {"ok": True, "agency": agency_slug, **result}
+
+
+@router.post("/discover-fields-all")
+async def discover_fields_all(
+    db: Session = Depends(get_db),
+    ctx: AuthContext = Depends(require_role("super_admin")),
+):
+    """Super-admin: auto-discover GHL field IDs for ALL agencies at once."""
+    agencies = db.execute(
+        select(Agency).where(
+            Agency.is_active == True,  # noqa: E712
+        )
+    ).scalars().all()
+
+    results = {}
+    seen = set()
+    for a in agencies:
+        if not a.ghl_location_id or not a.ghl_pit_token_enc:
+            continue
+        if a.ghl_location_id in seen:
+            continue
+        seen.add(a.ghl_location_id)
+        results[a.slug] = await discover_and_save_fields(db, a)
+
+    return {"ok": True, "results": results}

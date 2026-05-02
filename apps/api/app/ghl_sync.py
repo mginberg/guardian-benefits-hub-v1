@@ -28,7 +28,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.ghl_client import SlimContact, get_field_map, get_pit_token, stream_qualified_contacts
+from app.ghl_client import SlimContact, discover_field_ids, get_field_map, get_pit_token, stream_qualified_contacts
 from app.models import Agency, LeaderboardContact
 
 log = logging.getLogger(__name__)
@@ -156,18 +156,76 @@ def upsert_from_webhook_payload(
 
 # ── per-agency sync ─────────────────────────────────────────────────────────
 
+async def discover_and_save_fields(db: Session, agency: Agency) -> dict[str, Any]:
+    """Fetch GHL custom fields for an agency and save discovered IDs to DB."""
+    pit_token = get_pit_token(agency)
+    if not pit_token:
+        return {"error": "no_ghl_credentials"}
+
+    discovered = await discover_field_ids(pit_token, agency.ghl_location_id)
+    if not discovered:
+        return {"error": "no_fields_found", "tip": "Check the PIT token has read access to the location"}
+
+    import json
+    existing: dict = {}
+    try:
+        existing = json.loads(agency.ghl_field_map or "{}")
+    except Exception:
+        pass
+
+    merged = {**existing, **discovered}
+    agency.ghl_field_map = json.dumps(merged)
+    if "agent_name" in discovered:
+        agency.ghl_agent_field_id = discovered["agent_name"]
+    if "monthly_premium" in discovered:
+        agency.ghl_premium_field_id = discovered["monthly_premium"]
+    if "plan_name" in discovered:
+        agency.ghl_plan_field_id = discovered["plan_name"]
+    db.add(agency)
+    db.commit()
+    return {"discovered": discovered, "total_mapped": len(discovered)}
+
+
 async def sync_agency(db: Session, agency: Agency, *, full: bool = False) -> dict[str, Any]:
     """Pull contacts from GHL and upsert into leaderboard_contacts.
 
-    Args:
-        full: True → scan all pages (no early exit). False → incremental.
-
-    Returns dict with sync stats.
+    On first sync (or when field IDs are missing), auto-discovers the GHL
+    custom field IDs from the location's field definitions — no manual config.
     """
     pit_token = get_pit_token(agency)
     if not pit_token:
         log.debug("Agency %s has no GHL credentials — skipping", agency.slug)
         return {"skipped": 1, "reason": "no_ghl_credentials"}
+
+    # Auto-discover field IDs if not already configured
+    existing_map: dict = {}
+    try:
+        import json
+        existing_map = json.loads(agency.ghl_field_map or "{}")
+    except Exception:
+        pass
+
+    needs_discovery = (
+        not agency.ghl_agent_field_id
+        and not existing_map.get("agent_name")
+    )
+    if needs_discovery:
+        log.info("Agency %s: no field IDs configured — auto-discovering from GHL", agency.slug)
+        discovered = await discover_field_ids(pit_token, agency.ghl_location_id)
+        if discovered:
+            import json
+            merged = {**existing_map, **discovered}
+            agency.ghl_field_map = json.dumps(merged)
+            # Promote agent_name and monthly_premium to top-level columns too
+            if "agent_name" in discovered:
+                agency.ghl_agent_field_id = discovered["agent_name"]
+            if "monthly_premium" in discovered:
+                agency.ghl_premium_field_id = discovered["monthly_premium"]
+            if "plan_name" in discovered:
+                agency.ghl_plan_field_id = discovered["plan_name"]
+            db.add(agency)
+            db.commit()
+            log.info("Agency %s: auto-discovered field IDs: %s", agency.slug, discovered)
 
     field_map = get_field_map(agency)
     created = updated = skipped = 0

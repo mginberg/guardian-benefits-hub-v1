@@ -313,3 +313,72 @@ def get_pit_token(agency: Agency) -> Optional[str]:
     except Exception:
         log.warning("Could not decrypt GHL PIT token for agency %s", agency.slug)
         return None
+
+
+# ── Field auto-discovery ────────────────────────────────────────────────────
+# GHL's /locations/{id}/customFields endpoint returns all custom fields for a
+# location with their IDs.  We fuzzy-match field names so operators never need
+# to manually copy-paste GHL field IDs.
+
+_AGENT_NAME_VARIANTS = {
+    "agent name", "agent", "agent_name", "assigned agent", "wa code", "wacode",
+    "writing agent", "rep name", "representative",
+}
+_PREMIUM_VARIANTS = {
+    "monthly premium", "monthly_premium", "annual premium", "annual_premium",
+    "premium", "plan premium", "policy premium", "premium amount",
+}
+_PLAN_VARIANTS = {
+    "plan name", "plan_name", "plan type", "plan", "product name", "product",
+    "plan/product", "plan or product",
+}
+_STATE_VARIANTS = {
+    "issue state", "issue_state", "state", "policy state", "client state",
+}
+
+
+def _fuzzy_match(name: str, variants: set[str]) -> bool:
+    return name.lower().strip() in variants
+
+
+async def discover_field_ids(pit_token: str, location_id: str) -> dict[str, str]:
+    """Query GHL for all custom fields in a location and auto-map to our keys.
+
+    Returns a partial field_map dict (only keys we could auto-match).
+    Call this once per agency on first sync; results stored in agency.ghl_field_map.
+    """
+    hdrs = _headers(pit_token)
+    result: dict[str, str] = {}
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        try:
+            resp = await _api_call_with_retry(
+                client, "GET",
+                f"{GHL_BASE}/locations/{location_id}/customFields",
+                headers=hdrs,
+            )
+            if resp.status_code != 200:
+                log.warning("GHL custom fields %s for location %s", resp.status_code, location_id)
+                return result
+
+            fields: list[dict] = resp.json().get("customFields") or []
+            log.info("Discovered %d custom fields for location %s", len(fields), location_id)
+
+            for f in fields:
+                fid = f.get("id") or ""
+                name = f.get("name") or f.get("fieldKey") or ""
+                if not fid or not name:
+                    continue
+                if _fuzzy_match(name, _AGENT_NAME_VARIANTS):
+                    result.setdefault("agent_name", fid)
+                elif _fuzzy_match(name, _PREMIUM_VARIANTS):
+                    result.setdefault("monthly_premium", fid)
+                elif _fuzzy_match(name, _PLAN_VARIANTS):
+                    result.setdefault("plan_name", fid)
+                elif _fuzzy_match(name, _STATE_VARIANTS):
+                    result.setdefault("issue_state_field", fid)
+
+        except Exception as e:
+            log.exception("Error discovering GHL fields for location %s: %s", location_id, e)
+
+    return result

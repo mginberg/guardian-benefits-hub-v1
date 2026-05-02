@@ -34,7 +34,7 @@ export function LeaderboardIndexPage() {
   const isLoggedIn = !!localStorage.getItem('token')
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0b1426 0%,#1a2744 50%,#0b1426 100%)',
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0d0920 0%,#1a0d42 50%,#0d0920 100%)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem 1rem' }}>
       {/* Top right login */}
       <div style={{ position: 'absolute', top: 20, right: 24 }}>

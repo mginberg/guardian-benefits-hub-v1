@@ -207,8 +207,48 @@ export function AgenciesPage({ token }: { token: string }) {
                 </div>
 
                 <hr className="divider" />
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>
-                  GHL Custom Field IDs — leave blank to use Guardian Benefits defaults
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6 }}>
+                  GHL Webhook URL (Instant Leaderboard Sync)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <code style={{ fontSize: 11, background: 'rgba(255,255,255,.06)', padding: '6px 10px', borderRadius: 6,
+                    border: '1px solid rgba(255,255,255,.12)', wordBreak: 'break-all', color: 'var(--text-muted)', flex: 1 }}>
+                    {(import.meta.env.VITE_API_BASE || window.location.origin)}/api/leaderboard/webhook/{selected.slug}
+                  </code>
+                  <button className="btn" style={{ fontSize: 12, padding: '6px 12px', whiteSpace: 'nowrap' }}
+                    onClick={() => navigator.clipboard.writeText(
+                      `${import.meta.env.VITE_API_BASE || window.location.origin}/api/leaderboard/webhook/${selected.slug}`
+                    ).then(() => setSaveMsg('Webhook URL copied!'))}>
+                    Copy
+                  </button>
+                </div>
+                <div style={{ fontSize: 11, opacity: .5, marginTop: 4 }}>
+                  Add this to your GHL workflow → Actions → Webhook. Fires instantly when a contact is created/updated.
+                </div>
+                </div>
+                <button
+                  className="btn"
+                  style={{ background: 'var(--purple)', color: '#fff', fontSize: 13, padding: '8px 14px', marginBottom: 8 }}
+                  onClick={async () => {
+                    if (!selected) return
+                    try {
+                      const res = await apiPost<{ok: boolean; discovered?: Record<string,string>; total_mapped?: number; error?: string}>(
+                        `/api/leaderboard/discover-fields/${selected.slug}`, {}, token
+                      )
+                      if (res.ok) {
+                        setSaveMsg(`Auto-discovered ${res.total_mapped ?? 0} field IDs — refresh to see them`)
+                        setTimeout(() => window.location.reload(), 1500)
+                      } else {
+                        setError(res.error ?? 'Discovery failed')
+                      }
+                    } catch (e) { setError(e instanceof Error ? e.message : 'Discovery failed') }
+                  }}
+                >
+                  Auto-Discover from GHL
+                </button>
+                <div style={{ fontSize: 11, opacity: .55, marginBottom: 8 }}>
+                  Uses this agency's PIT token to query GHL and auto-map field IDs — no manual entry needed.
+                  Only override below if auto-discovery maps the wrong field.
                 </div>
                 <div className="field">
                   <label className="fieldLabel">Agent Name Field ID</label>
