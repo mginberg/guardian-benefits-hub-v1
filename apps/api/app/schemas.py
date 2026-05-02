@@ -14,6 +14,7 @@ class TokenResponse(BaseModel):
 class MeResponse(BaseModel):
     user_id: str
     agency_id: str
+    agency_slug: str = ""
     role: str
     email: str
     display_name: str

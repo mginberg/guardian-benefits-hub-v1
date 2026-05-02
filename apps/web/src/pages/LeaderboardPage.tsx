@@ -199,8 +199,8 @@ function SidePanel({ data, accentColor, label, icon }: {
   data: PeriodData; accentColor: string; label: string; icon: string
 }) {
   return (
-    <div style={{ borderRadius: 18, overflow: 'hidden', background: 'linear-gradient(180deg,rgba(26,13,66,.6),rgba(18,9,48,.4))',
-      border: '1.5px solid rgba(255,255,255,.08)', borderTop: `3px solid ${accentColor}` }}>
+    <div style={{ borderRadius: 16, overflow: 'hidden', background: 'rgba(255,255,255,.042)',
+      border: '1px solid rgba(255,255,255,.09)', borderTop: `3px solid ${accentColor}` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px',
         borderBottom: '1.5px solid rgba(255,255,255,.07)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -358,14 +358,13 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
   const planAccents    = ['#a78bfa','#3b82f6','#dc2626','#059669','#d97706']
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0d0920', color: '#e4e6eb' }}>
+    <div style={{ minHeight: '100vh', background: '#0d0920', color: '#eef1f8', fontFamily: 'Geist,system-ui,sans-serif' }}>
       {tierQueue.length > 0 && <TierUpCelebration event={tierQueue[0]} onDone={() => setTierQueue(q => q.slice(1))} />}
 
-      {/* Header bar — purple + gold */}
+      {/* Header bar — matches app sidebar color exactly */}
       <header style={{ position: 'sticky', top: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 32px', height: 72, gap: 12, flexWrap: 'wrap',
-        background: 'linear-gradient(135deg,#1a0d42,#120930,#1a0d42)',
-        borderBottom: '3px solid rgba(201,168,76,.4)', boxShadow: '0 4px 24px rgba(0,0,0,.5)' }}>
+        padding: '0 32px', height: 64, gap: 12, flexWrap: 'wrap',
+        background: '#1a0d42', borderBottom: '1px solid rgba(255,255,255,.09)', boxShadow: '0 2px 16px rgba(0,0,0,.4)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ width: 50, height: 50, borderRadius: 12, background: 'linear-gradient(135deg,#7c3aed,#5b21b6)',
             boxShadow: '0 4px 20px rgba(139,92,246,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -451,7 +450,7 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
       {activeTab === 'leaders' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr)', gap: 20, alignItems: 'start' }}>
           {/* Today's leaders */}
-          <div style={{ borderRadius: 20, overflow: 'hidden', background: 'linear-gradient(180deg,rgba(26,13,66,.7),rgba(18,9,48,.5))', border: '1.5px solid rgba(255,255,255,.08)' }}>
+          <div style={{ borderRadius: 16, overflow: 'hidden', background: 'rgba(255,255,255,.042)', border: '1px solid rgba(255,255,255,.09)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 32px', borderBottom: '1.5px solid rgba(255,255,255,.08)' }}>
               <h2 style={{ color: '#fff', fontSize: 24, fontWeight: 900, margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{ fontSize: 28 }}>🏆</span> Today's Leaders
@@ -539,7 +538,7 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
           {breakdown ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }}>
               {/* By State */}
-              <div style={{ borderRadius: 20, overflow: 'hidden', background: 'linear-gradient(180deg,rgba(26,13,66,.7),rgba(18,9,48,.5))', border: '1.5px solid rgba(255,255,255,.08)' }}>
+              <div style={{ borderRadius: 16, overflow: 'hidden', background: 'rgba(255,255,255,.042)', border: '1px solid rgba(255,255,255,.09)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 28px', borderBottom: '1.5px solid rgba(255,255,255,.08)' }}>
                   <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(59,130,246,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <MapPin style={{ width: 20, height: 20, color: '#60a5fa' }} />
@@ -580,7 +579,7 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
               </div>
 
               {/* By Plan Type */}
-              <div style={{ borderRadius: 20, overflow: 'hidden', background: 'linear-gradient(180deg,rgba(26,13,66,.7),rgba(18,9,48,.5))', border: '1.5px solid rgba(255,255,255,.08)' }}>
+              <div style={{ borderRadius: 16, overflow: 'hidden', background: 'rgba(255,255,255,.042)', border: '1px solid rgba(255,255,255,.09)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 28px', borderBottom: '1.5px solid rgba(255,255,255,.08)' }}>
                   <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(139,92,246,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Briefcase style={{ width: 20, height: 20, color: '#a78bfa' }} />
@@ -621,7 +620,7 @@ export function LeaderboardPage({ me }: { me: { role: string; agency_id: string 
               </div>
             </div>
           ) : (
-            <div style={{ borderRadius: 20, padding: 56, textAlign: 'center', background: 'linear-gradient(180deg,rgba(26,13,66,.7),rgba(18,9,48,.5))', border: '1.5px solid rgba(255,255,255,.08)' }}>
+            <div style={{ borderRadius: 16, padding: 56, textAlign: 'center', background: 'rgba(255,255,255,.042)', border: '1px solid rgba(255,255,255,.09)' }}>
               <BarChart3 style={{ width: 80, height: 80, margin: '0 auto 16px', color: 'rgba(255,255,255,.12)' }} />
               <p style={{ fontWeight: 800, fontSize: 20, color: 'rgba(255,255,255,.4)' }}>No breakdown data available yet</p>
             </div>

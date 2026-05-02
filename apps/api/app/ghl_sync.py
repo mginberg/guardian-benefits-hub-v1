@@ -293,14 +293,15 @@ async def sync_agency(db: Session, agency: Agency, *, full: bool = False) -> dic
 # ── sync all agencies ───────────────────────────────────────────────────────
 
 async def sync_all_agencies(db: Session) -> dict[str, Any]:
-    """Called by the worker cron every 30 minutes.
+    """Called by the worker cron every 5 minutes.
 
-    Every 3rd call is a full scan; otherwise incremental.
-    Deduplicates by location_id so shared sub-accounts aren't scanned twice.
+    Every 6th call (≈30 min) is a full scan; otherwise incremental (early-exit
+    on already-seen contacts). Deduplicates by location_id so shared sub-accounts
+    aren't scanned twice.
     """
     global _sync_counter
     _sync_counter += 1
-    full = (_sync_counter % 3) == 0
+    full = (_sync_counter % 6) == 0
 
     if full:
         log.info("GHL sync-all: FULL scan (run %d)", _sync_counter)

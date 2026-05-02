@@ -33,8 +33,9 @@ class Settings(BaseSettings):
     unl_import_cron_hour: int = 11
     unl_import_cron_minute: int = 0
 
-    # GHL leaderboard sync schedule (UTC) — every 30 minutes by default
-    ghl_sync_interval_minutes: int = 30
+    # GHL leaderboard sync schedule — fast incremental every 5 min, full sweep every 30 min
+    ghl_sync_interval_minutes: int = 5
+    ghl_full_sync_interval_minutes: int = 30
 
     # Optional webhook token to verify incoming GHL webhook requests
     ghl_webhook_token: str | None = None

@@ -34,8 +34,8 @@ export function LeaderboardIndexPage() {
   const isLoggedIn = !!localStorage.getItem('token')
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0d0920 0%,#1a0d42 50%,#0d0920 100%)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem 1rem' }}>
+    <div style={{ minHeight: '100vh', background: '#0d0920',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem 1rem', fontFamily: 'Geist,system-ui,sans-serif', color: '#eef1f8' }}>
       {/* Top right login */}
       <div style={{ position: 'absolute', top: 20, right: 24 }}>
         <Link to={isLoggedIn ? '/' : '/login'}

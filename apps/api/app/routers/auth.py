@@ -87,9 +87,11 @@ def me(ctx: AuthContext = Depends(get_auth_context), db: Session = Depends(get_d
     user = db.execute(select(User).where(User.id == ctx.user_id)).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid session")
+    agency = db.execute(select(Agency).where(Agency.id == user.agency_id)).scalar_one_or_none()
     return MeResponse(
         user_id=user.id,
         agency_id=user.agency_id,
+        agency_slug=agency.slug if agency else "",
         role=ctx.role,
         email=user.email,
         display_name=user.display_name,

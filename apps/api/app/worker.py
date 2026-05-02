@@ -35,7 +35,7 @@ def _unl_import_latest():
 
 
 def _ghl_sync_all():
-    """Sync GHL contacts for all agencies — runs every 30 min."""
+    """Sync GHL contacts — runs every 5 min. Full sweep every 6th run (~30 min)."""
     db = SessionLocal()
     try:
         result = asyncio.run(sync_all_agencies(db))
@@ -101,7 +101,7 @@ def main() -> None:
         id="unl_import_latest",
     )
 
-    # GHL leaderboard sync (every 30 min). Skips agencies without GHL credentials.
+    # GHL leaderboard sync (every 5 min incremental, full every ~30 min).
     scheduler.add_job(
         _ghl_sync_all,
         "interval",

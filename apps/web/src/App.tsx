@@ -10,6 +10,7 @@ import { LeaderboardIndexPage } from './pages/LeaderboardIndexPage'
 type Me = {
   user_id: string
   agency_id: string
+  agency_slug: string
   role: string
   email: string
   display_name: string
@@ -128,6 +129,19 @@ function Sidebar({ me, onLogout }: { me: Me; onLogout: () => void }) {
             </Link>
           )
         })}
+        {/* Leaderboard — public page, slug depends on role */}
+        {(() => {
+          const lbPath = me.role === 'super_admin'
+            ? '/leaderboard'
+            : `/leaderboard/${me.agency_slug}`
+          const active = location.pathname.startsWith('/leaderboard')
+          return (
+            <Link to={lbPath} className={`sidebarLink${active ? ' sidebarLinkActive' : ''}`}>
+              <span className="sidebarLinkIcon">🏆</span>
+              Leaderboard
+            </Link>
+          )
+        })()}
       </nav>
 
       <div className="sidebarFooter">
