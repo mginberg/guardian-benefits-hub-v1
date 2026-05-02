@@ -45,13 +45,7 @@ def _resolve_scope_agencies(
     agency_slug: str,
     agency_id_override: Optional[str],
 ) -> tuple[Agency, list[Agency]]:
-    """
-    Scope logic:
-    - admin: only their own agency
-    - super_admin:
-      - if agency_slug == "guardian" and no override → include all active agencies
-      - else → include the agency resolved by slug or override
-    """
+    """Scope logic: admins see only their agency; super_admins see all (when slug=guardian) or one."""
     if ctx.role == "admin":
         agency = db.execute(select(Agency).where(Agency.id == ctx.agency_id)).scalar_one_or_none()
         if not agency:
@@ -70,20 +64,13 @@ def _resolve_scope_agencies(
         return override, [override]
 
     if agency_slug == "guardian":
-        agencies = db.execute(select(Agency).where(Agency.is_active == True)).scalars().all()
+        agencies = db.execute(select(Agency).where(Agency.is_active == True)).scalars().all()  # noqa: E712
         return primary, agencies
 
     return primary, [primary]
 
 
-def _apply_filters(
-    stmt,
-    *,
-    agency_ids: list[str],
-    date_from: Optional[date],
-    date_to: Optional[date],
-    agent_name: Optional[str],
-):
+def _apply_filters(stmt, *, agency_ids, date_from, date_to, agent_name):
     stmt = stmt.where(PolicyReport.agency_id.in_(agency_ids))
     if date_from:
         stmt = stmt.where(PolicyReport.issue_date.is_not(None), PolicyReport.issue_date >= date_from)
@@ -92,6 +79,37 @@ def _apply_filters(
     if agent_name:
         stmt = stmt.where(func.lower(PolicyReport.agent_name).contains(agent_name.lower().strip()))
     return stmt
+
+
+def _compute_rates(counts: dict, claim_count: int = 0) -> dict:
+    """Given a classification-count dict, return computed totals and rates."""
+    active     = counts.get("active", 0)
+    terminated = counts.get("terminated", 0)
+    lapsed     = counts.get("lapsed", 0)
+    ne         = counts.get("non_effectuated", 0)
+    pc         = counts.get("pending_cancel", 0)
+    suspended  = counts.get("suspended", 0)
+    pending    = counts.get("pending_new", 0) + counts.get("pending_payment", 0) + counts.get("future_effective", 0)
+    total      = sum(counts.values())
+    definitive = max(total - pending - suspended, 0)
+    cancelled  = terminated + lapsed
+    cancelled_excl = max(cancelled - claim_count, 0)
+    return {
+        "total": total,
+        "pending": pending,
+        "definitive": definitive,
+        "active": active,
+        "terminated": terminated,
+        "lapsed": lapsed,
+        "non_effectuated": ne,
+        "pending_cancel": pc,
+        "suspended": suspended,
+        "cancelled": cancelled,
+        "cancelled_excl_claims": cancelled_excl,
+        "effectuation_rate":    round(active / definitive * 100.0, 1) if definitive else 0.0,
+        "cancel_rate":          round(cancelled_excl / definitive * 100.0, 1) if definitive else 0.0,
+        "non_effectuated_rate": round(ne / definitive * 100.0, 1) if definitive else 0.0,
+    }
 
 
 @router.get("/{agency_slug}/dashboard-stats")
@@ -178,8 +196,6 @@ def dashboard_stats(
 
     pending_pipeline = pending_new_count + pending_payment_count + future_effective_count
     definitive = max(total_policies - pending_pipeline - suspended_count, 0)
-
-    # Claim counts by agency + agent (avoid N+1 queries later)
     claim_by_agency_stmt = _apply_filters(
         select(
             PolicyReport.agency_id.label("agency_id"),
@@ -616,46 +632,20 @@ def dashboard_stats(
     agencies_out = []
     for a_id, payload in agency_map.items():
         c = payload["counts"]
-        a_total = int(payload["total"])
-        a_active = int(c.get("active", 0))
-        a_terminated = int(c.get("terminated", 0))
-        a_lapsed = int(c.get("lapsed", 0))
-        a_ne = int(c.get("non_effectuated", 0))
-        a_pending_new = int(c.get("pending_new", 0))
-        a_pending_payment = int(c.get("pending_payment", 0))
-        a_future = int(c.get("future_effective", 0))
-        a_pending_cancel = int(c.get("pending_cancel", 0))
-        a_suspended = int(c.get("suspended", 0))
-        a_pending = a_pending_new + a_pending_payment + a_future
-        a_definitive = max(a_total - a_pending - a_suspended, 0)
-
-        a_claim = int(claim_by_agency.get(a_id, 0))
-        a_cancelled = a_terminated + a_lapsed
-        a_cancelled_excl = max(a_cancelled - a_claim, 0)
-
-        agencies_out.append(
-            {
-                "id": a_id,
-                "code": payload["code"] or payload["slug"] or a_id[:6],
-                "name": payload["name"],
-                "slug": payload["slug"],
-                "total": a_total,
-                "active": a_active,
-                "pending_new": a_pending_new,
-                "pending_payment": a_pending_payment,
-                "future_effective": a_future,
-                "terminated": a_terminated,
-                "non_effectuated": a_ne,
-                "pending_cancel": a_pending_cancel,
-                "lapsed": a_lapsed,
-                "suspended": a_suspended,
-                "pending": a_pending,
-                "active_premium": round(float(payload["active_premium"]), 2),
-                "effectuation_rate": round(a_active / a_definitive * 100.0, 1) if a_definitive else 0.0,
-                "cancel_rate": round(a_cancelled_excl / a_definitive * 100.0, 1) if a_definitive else 0.0,
-                "non_effectuated_rate": round(a_ne / a_definitive * 100.0, 1) if a_definitive else 0.0,
-            }
-        )
+        s = _compute_rates(c, claim_count=int(claim_by_agency.get(a_id, 0)))
+        agencies_out.append({
+            "id": a_id,
+            "code": payload["code"] or payload["slug"] or a_id[:6],
+            "name": payload["name"],
+            "slug": payload["slug"],
+            **{k: s[k] for k in ("total", "active", "pending", "terminated", "non_effectuated",
+                                  "pending_cancel", "lapsed", "suspended",
+                                  "effectuation_rate", "cancel_rate", "non_effectuated_rate")},
+            "pending_new": c.get("pending_new", 0),
+            "pending_payment": c.get("pending_payment", 0),
+            "future_effective": c.get("future_effective", 0),
+            "active_premium": round(float(payload["active_premium"]), 2),
+        })
     agencies_out.sort(key=lambda a: a.get("active_premium", 0.0), reverse=True)
 
     # Agent breakdown
@@ -710,45 +700,18 @@ def dashboard_stats(
     agents_out = []
     for payload in agent_map.values():
         c = payload["counts"]
-        a_total = int(payload["total"])
-        a_active = int(c.get("active", 0))
-        a_terminated = int(c.get("terminated", 0))
-        a_lapsed = int(c.get("lapsed", 0))
-        a_ne = int(c.get("non_effectuated", 0))
-        a_pending_new = int(c.get("pending_new", 0))
-        a_pending_payment = int(c.get("pending_payment", 0))
-        a_future = int(c.get("future_effective", 0))
-        a_pending_cancel = int(c.get("pending_cancel", 0))
-        a_suspended = int(c.get("suspended", 0))
-        a_pending = a_pending_new + a_pending_payment + a_future
-        a_definitive = max(a_total - a_pending - a_suspended, 0)
-
-        a_claim = int(
-            claim_by_agent.get((payload["agency_id"], payload["agent_name"], payload["wa_code"]), 0)
-        )
-        a_cancelled = a_terminated + a_lapsed
-        a_cancelled_excl = max(a_cancelled - a_claim, 0)
-
-        agents_out.append(
-            {
-                "agent_name": payload["agent_name"],
-                "wa_code": payload["wa_code"],
-                "agency_code": payload["agency_code"],
-                "agency_name": payload["agency_name"],
-                "total": a_total,
-                "active": a_active,
-                "pending": a_pending,
-                "terminated": a_terminated,
-                "non_effectuated": a_ne,
-                "pending_cancel": a_pending_cancel,
-                "lapsed": a_lapsed,
-                "suspended": a_suspended,
-                "active_premium": round(float(payload["active_premium"]), 2),
-                "effectuation_rate": round(a_active / a_definitive * 100.0, 1) if a_definitive else 0.0,
-                "cancel_rate": round(a_cancelled_excl / a_definitive * 100.0, 1) if a_definitive else 0.0,
-                "non_effectuated_rate": round(a_ne / a_definitive * 100.0, 1) if a_definitive else 0.0,
-            }
-        )
+        claim_key = (payload["agency_id"], payload["agent_name"], payload["wa_code"])
+        s = _compute_rates(c, claim_count=int(claim_by_agent.get(claim_key, 0)))
+        agents_out.append({
+            "agent_name": payload["agent_name"],
+            "wa_code": payload["wa_code"],
+            "agency_code": payload["agency_code"],
+            "agency_name": payload["agency_name"],
+            **{k: s[k] for k in ("total", "active", "pending", "terminated", "non_effectuated",
+                                  "pending_cancel", "lapsed", "suspended",
+                                  "effectuation_rate", "cancel_rate", "non_effectuated_rate")},
+            "active_premium": round(float(payload["active_premium"]), 2),
+        })
     agents_out.sort(key=lambda a: a.get("active_premium", 0.0), reverse=True)
 
     # Last import metadata (best-effort)
