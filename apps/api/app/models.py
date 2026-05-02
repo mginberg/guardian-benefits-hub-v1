@@ -177,7 +177,8 @@ class LeaderboardContact(Base):
     )
 
 
-class UnroutedPolicyRow(Base):    __tablename__ = "unrouted_policy_rows"
+class UnroutedPolicyRow(Base):
+    __tablename__ = "unrouted_policy_rows"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=new_id)
     source_file: Mapped[str] = mapped_column(String, default="", index=True)
