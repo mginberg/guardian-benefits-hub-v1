@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.auth import AuthContext, require_role
 from app.config import settings
 from app.db import get_db
-from app.ghl_sync import sync_agency, sync_all_agencies, upsert_from_webhook
+from app.ghl_sync import sync_agency, sync_all_agencies, upsert_from_webhook_payload
 from app.models import Agency, LeaderboardContact
 
 log = logging.getLogger(__name__)
@@ -241,25 +241,11 @@ async def ghl_webhook(
     if not agency:
         raise HTTPException(status_code=404, detail="Agency not found")
 
-    # GHL webhook payloads vary — normalize
-    contact = (
-        payload.get("contact")
-        or payload.get("data")
-        or payload
-    )
-
-    contact_id = str(
-        contact.get("id")
-        or contact.get("contactId")
-        or contact.get("contact_id")
-        or ""
-    )
-    if not contact_id:
-        return {"ok": True, "msg": "no contact id — ignored"}
-
     try:
-        row = upsert_from_webhook(db, agency=agency, contact=contact)
-        log.info("Webhook: upserted %s for %s", contact_id, agency_slug)
+        row = upsert_from_webhook_payload(db, agency=agency, payload=payload)
+        if row is None:
+            return {"ok": True, "msg": "contact skipped (no agent_name or no id)"}
+        log.info("Webhook upserted for %s (agent=%s)", agency_slug, row.agent_name)
         return {"ok": True, "contact_id": row.ghl_contact_id, "agent": row.agent_name}
     except Exception as e:
         log.exception("Webhook upsert failed for %s: %s", agency_slug, e)

@@ -29,6 +29,10 @@ def _to_agency_response(a: Agency) -> AgencyResponse:
         unl_prefix=a.unl_prefix or "",
         ghl_location_id=a.ghl_location_id or "",
         ghl_pit_token_set=bool(a.ghl_pit_token_enc),
+        ghl_agent_field_id=a.ghl_agent_field_id or "",
+        ghl_premium_field_id=a.ghl_premium_field_id or "",
+        ghl_plan_field_id=a.ghl_plan_field_id or "",
+        ghl_field_map=a.ghl_field_map or "{}",
     )
 
 
@@ -86,6 +90,14 @@ def update_agency(
         a.unl_prefix = (req.unl_prefix or "").strip()
     if req.ghl_location_id is not None:
         a.ghl_location_id = (req.ghl_location_id or "").strip()
+    if req.ghl_agent_field_id is not None:
+        a.ghl_agent_field_id = (req.ghl_agent_field_id or "").strip()
+    if req.ghl_premium_field_id is not None:
+        a.ghl_premium_field_id = (req.ghl_premium_field_id or "").strip()
+    if req.ghl_plan_field_id is not None:
+        a.ghl_plan_field_id = (req.ghl_plan_field_id or "").strip()
+    if req.ghl_field_map is not None:
+        a.ghl_field_map = (req.ghl_field_map or "{}").strip()
 
     db.add(a)
     db.commit()

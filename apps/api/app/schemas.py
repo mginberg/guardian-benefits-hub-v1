@@ -39,6 +39,10 @@ class AgencyResponse(BaseModel):
     unl_prefix: str
     ghl_location_id: str
     ghl_pit_token_set: bool
+    ghl_agent_field_id: str = ""
+    ghl_premium_field_id: str = ""
+    ghl_plan_field_id: str = ""
+    ghl_field_map: str = "{}"
 
 
 class AgencyCreateRequest(BaseModel):
@@ -52,6 +56,10 @@ class AgencyUpdateRequest(BaseModel):
     is_active: bool | None = None
     unl_prefix: str | None = None
     ghl_location_id: str | None = None
+    ghl_agent_field_id: str | None = None
+    ghl_premium_field_id: str | None = None
+    ghl_plan_field_id: str | None = None
+    ghl_field_map: str | None = None
 
 
 class AgencySetGhlTokenRequest(BaseModel):

@@ -6,7 +6,6 @@ import { DashboardPage } from './pages/DashboardPage'
 import { AgenciesPage } from './pages/AgenciesPage'
 import { LeaderboardPage } from './pages/LeaderboardPage'
 import { LeaderboardIndexPage } from './pages/LeaderboardIndexPage'
-import { PolicyBookPage } from './pages/PolicyBookPage'
 
 type Me = {
   user_id: string
@@ -69,7 +68,6 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard',    to: '/',             icon: '⬡' },
-  { label: 'Leaderboard',  to: '/leaderboard',  icon: '🏆' },
   { label: 'Agencies',     to: '/settings/agencies', icon: '🏢', adminOnly: true },
 ]
 
@@ -209,29 +207,14 @@ export function App() {
           )
         }
       />
+      {/* ── Public leaderboard (no auth required) ── */}
       <Route
         path="/leaderboard"
-        element={
-          me ? (
-            <Shell me={me} onLogout={logout} pageTitle="Leaderboard">
-              <LeaderboardIndexPage token={token} />
-            </Shell>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
+        element={<LeaderboardIndexPage />}
       />
       <Route
         path="/leaderboard/:agencySlug"
-        element={
-          me ? (
-            <Shell me={me} onLogout={logout} pageTitle="Leaderboard">
-              <LeaderboardPage token={token} me={{ role: me.role, agency_id: me.agency_id }} />
-            </Shell>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
+        element={<LeaderboardPage me={me ? { role: me.role, agency_id: me.agency_id } : null} />}
       />
       <Route
         path="/policy-book"

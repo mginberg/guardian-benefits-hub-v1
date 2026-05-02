@@ -1,22 +1,23 @@
 """
-GHL (GoHighLevel) sync service for the leaderboard.
+GHL sync service — upserts GHL contacts into leaderboard_contacts table.
 
-Contacts in GHL represent deal submissions. We mirror them into
-LeaderboardContact so the leaderboard can show real-time deal counts
-and premium without re-querying GHL on every page load.
+Sync paths (newest-write-wins):
+  1. Webhook   — instant on GHL ContactCreate event (POST /api/leaderboard/webhook/{slug})
+  2. Cron      — every 30 min via worker APScheduler → sync_all_agencies()
+  3. Manual    — super-admin POST /api/leaderboard/sync/{slug}
 
-Sync paths:
-  1. Webhook  — GHL calls POST /api/leaderboard/webhook/{agency_slug}
-               instantly when a contact is created.  O(1).
-  2. Cron     — Worker calls sync_all_agencies() every 30 min.
-               Incremental by default (since last sync); full on first run.
-  3. Manual   — Super-admin POST /api/leaderboard/sync/{agency_slug}
+Incremental sync strategy (same as original app):
+  - Every 3rd cron run does a FULL scan (all pages).
+  - Other runs are INCREMENTAL: walk pages newest-first and stop after
+    EARLY_EXIT_THRESHOLD consecutive contacts that are already identical in
+    the DB (same agent, premium, date, state, plan). This bounds each run
+    to O(new_deals) rather than O(total_contacts) during steady state.
 
-GHL field mapping (customField values keyed by field name):
-  "agent_name"    or "agent" or "wa_code"   → agent_name
-  "annual_premium" or "premium"             → premium
-  "plan_name"     or "plan_type"            → plan_name
-  "state"         or "issue_state"         → issue_state
+Memory safety:
+  - stream_qualified_contacts() yields one contact at a time (generator).
+  - Each batch is discarded before the next GHL page is fetched.
+  - Peak RAM = ~one GHL page (100 contacts) regardless of location size.
+  - This is the fix for the original OOM crash on Guardian + Medigap.
 """
 from __future__ import annotations
 
@@ -24,265 +25,248 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.ghl_client import SlimContact, get_field_map, get_pit_token, stream_qualified_contacts
 from app.models import Agency, LeaderboardContact
-from app.security import decrypt_secret
 
 log = logging.getLogger(__name__)
 
-GHL_BASE = "https://services.leadconnectorhq.com"
-GHL_API_VERSION = "2021-07-28"
+# After this many consecutive DB-matching contacts, stop incremental sync.
+# (Full sync ignores this threshold.)
+EARLY_EXIT_THRESHOLD = 200
 
-# ── helpers ────────────────────────────────────────────────────────────────
+# Commit to DB every N upserts to avoid holding a huge in-memory transaction.
+BATCH_SIZE = 100
 
-def _headers(pit_token: str) -> dict[str, str]:
-    return {
-        "Authorization": f"Bearer {pit_token}",
-        "Version": GHL_API_VERSION,
-        "Content-Type": "application/json",
-    }
+# Cron run counter — every 3rd run is a full sync.
+_sync_counter: int = 0
 
 
-def _parse_datetime(raw: str | None) -> datetime | None:
-    if not raw:
-        return None
-    try:
-        # GHL returns ISO-8601 strings, sometimes with trailing Z
-        return datetime.fromisoformat(raw.replace("Z", "+00:00"))
-    except Exception:
-        return None
+# ── upsert helpers ──────────────────────────────────────────────────────────
 
-
-def _extract_custom_field(fields: list[dict], *keys: str) -> str:
-    """Return first non-empty value matching any of the provided field name keys."""
-    keys_lower = {k.lower() for k in keys}
-    for f in fields:
-        name = (f.get("name") or f.get("fieldKey") or "").lower()
-        if name in keys_lower:
-            val = f.get("value") or ""
-            if val:
-                return str(val).strip()
-    return ""
-
-
-def _contact_to_fields(contact: dict[str, Any]) -> dict[str, Any]:
-    """Map a raw GHL contact dict to LeaderboardContact fields."""
-    custom = contact.get("customFields") or contact.get("customField") or []
-    if isinstance(custom, dict):
-        # Some GHL versions return a dict keyed by field ID
-        custom = [{"fieldKey": k, "value": v} for k, v in custom.items()]
-
-    agent_name = (
-        _extract_custom_field(custom, "agent_name", "agent", "wa_code", "assigned_agent")
-        or contact.get("assignedTo", "")
-        or ""
+def _contact_matches(row: LeaderboardContact, sc: SlimContact) -> bool:
+    """Return True if the DB row already reflects the GHL contact exactly."""
+    return (
+        row.agent_name == sc.agent_name
+        and abs(row.premium - sc.premium) < 0.01
+        and row.issue_state == sc.issue_state
+        and row.plan_name == sc.plan_name
     )
-    premium_raw = _extract_custom_field(custom, "annual_premium", "premium", "annualpremium", "annual premium")
-    try:
-        premium = float(str(premium_raw).replace("$", "").replace(",", "").strip()) if premium_raw else 0.0
-    except (ValueError, TypeError):
-        premium = 0.0
-
-    plan_name = _extract_custom_field(custom, "plan_name", "plan_type", "planname", "plan type", "plan")
-    issue_state = _extract_custom_field(custom, "state", "issue_state", "issuestate")
-
-    date_added = _parse_datetime(contact.get("dateAdded") or contact.get("date_added"))
-
-    return {
-        "agent_name": agent_name,
-        "premium": premium,
-        "plan_name": plan_name,
-        "issue_state": issue_state,
-        "contact_first_name": contact.get("firstName") or contact.get("first_name") or "",
-        "contact_last_name": contact.get("lastName") or contact.get("last_name") or "",
-        "ghl_date_added": date_added,
-    }
 
 
-# ── upsert ─────────────────────────────────────────────────────────────────
+def _apply_slim(row: LeaderboardContact, sc: SlimContact) -> None:
+    """Copy SlimContact fields onto an ORM row (in-place)."""
+    row.agent_name = sc.agent_name
+    row.premium = sc.premium
+    row.issue_state = sc.issue_state
+    row.plan_name = sc.plan_name
+    row.contact_first_name = sc.contact_first_name
+    row.contact_last_name = sc.contact_last_name
+    if sc.date:
+        row.ghl_date_added = sc.date if sc.date.tzinfo else sc.date.replace(tzinfo=timezone.utc)
+    row.last_synced_at = datetime.now(timezone.utc)
 
-def upsert_contact(
+
+def upsert_contact_from_slim(
     db: Session,
     *,
-    agency_id: str,
-    ghl_location_id: str,
-    ghl_contact_id: str,
+    agency: Agency,
+    contact_id: str,
+    sc: SlimContact,
     source: str = "ghl_sync",
-    **fields: Any,
-) -> LeaderboardContact:
-    """Create or update one LeaderboardContact row. Returns the row."""
+) -> tuple[bool, bool]:
+    """Upsert one LeaderboardContact. Returns (was_created, was_changed)."""
     existing = db.execute(
         select(LeaderboardContact).where(
-            LeaderboardContact.ghl_location_id == ghl_location_id,
-            LeaderboardContact.ghl_contact_id == ghl_contact_id,
+            LeaderboardContact.ghl_location_id == agency.ghl_location_id,
+            LeaderboardContact.ghl_contact_id == contact_id,
         )
     ).scalar_one_or_none()
 
     if existing:
-        for k, v in fields.items():
-            setattr(existing, k, v)
+        if _contact_matches(existing, sc):
+            return False, False
+        _apply_slim(existing, sc)
         existing.source = source
-        existing.last_synced_at = datetime.now(timezone.utc)
-        db.flush()
-        return existing
+        return False, True
+
+    date_added = None
+    if sc.date:
+        date_added = sc.date if sc.date.tzinfo else sc.date.replace(tzinfo=timezone.utc)
 
     row = LeaderboardContact(
-        agency_id=agency_id,
-        ghl_location_id=ghl_location_id,
-        ghl_contact_id=ghl_contact_id,
+        agency_id=agency.id,
+        ghl_location_id=agency.ghl_location_id,
+        ghl_contact_id=contact_id,
         source=source,
-        **fields,
+        agent_name=sc.agent_name,
+        premium=sc.premium,
+        plan_name=sc.plan_name,
+        issue_state=sc.issue_state,
+        contact_first_name=sc.contact_first_name,
+        contact_last_name=sc.contact_last_name,
+        ghl_date_added=date_added,
     )
     db.add(row)
-    db.flush()
-    return row
+    return True, True
 
 
-def upsert_from_webhook(
+def upsert_from_webhook_payload(
     db: Session,
     *,
     agency: Agency,
-    contact: dict[str, Any],
-) -> LeaderboardContact:
-    """Called instantly when GHL fires a ContactCreate webhook."""
-    fields = _contact_to_fields(contact)
-    row = upsert_contact(
-        db,
-        agency_id=agency.id,
-        ghl_location_id=agency.ghl_location_id,
-        ghl_contact_id=str(contact.get("id") or contact.get("contactId") or ""),
-        source="webhook",
-        **fields,
-    )
+    payload: dict[str, Any],
+) -> LeaderboardContact | None:
+    """Called instantly when GHL fires a ContactCreate webhook.
+
+    The webhook payload structure varies by GHL version.  We normalise it
+    to find the contact object and extract the contact ID.
+    """
+    # Payload can be the contact directly, or wrapped in {"contact": {...}}
+    contact = payload.get("contact") or payload.get("data") or payload
+    contact_id = str(
+        contact.get("id") or contact.get("contactId") or contact.get("contact_id") or ""
+    ).strip()
+    if not contact_id:
+        log.warning("Webhook payload has no contact id for agency %s", agency.slug)
+        return None
+
+    fm = get_field_map(agency)
+    from app.ghl_client import slim_contact as _slim
+    sc = _slim(contact, fm)
+    if sc is None:
+        # Contact has no agent_name field — not a closed deal, ignore.
+        log.debug("Webhook contact %s for agency %s has no agent_name — skipped", contact_id, agency.slug)
+        return None
+
+    upsert_contact_from_slim(db, agency=agency, contact_id=contact_id, sc=sc, source="webhook")
     db.commit()
-    log.info("Webhook upserted contact %s for agency %s", row.ghl_contact_id, agency.slug)
+
+    row = db.execute(
+        select(LeaderboardContact).where(
+            LeaderboardContact.ghl_location_id == agency.ghl_location_id,
+            LeaderboardContact.ghl_contact_id == contact_id,
+        )
+    ).scalar_one_or_none()
+    log.info("Webhook upserted contact %s for agency %s (agent=%s)", contact_id, agency.slug, sc.agent_name)
     return row
 
 
-# ── GHL API fetch ──────────────────────────────────────────────────────────
+# ── per-agency sync ─────────────────────────────────────────────────────────
 
-async def _fetch_contacts_page(
-    client: httpx.AsyncClient,
-    pit_token: str,
-    location_id: str,
-    *,
-    start_after: str | None = None,
-    limit: int = 100,
-) -> tuple[list[dict], str | None]:
-    """Fetch one page of contacts. Returns (contacts, next_page_url_or_none)."""
-    params: dict[str, Any] = {"locationId": location_id, "limit": limit}
-    if start_after:
-        params["startAfter"] = start_after
-
-    try:
-        resp = await client.get(
-            f"{GHL_BASE}/contacts/",
-            headers=_headers(pit_token),
-            params=params,
-            timeout=20,
-        )
-        resp.raise_for_status()
-        body = resp.json()
-        contacts = body.get("contacts") or []
-        # GHL uses `nextPageUrl` or `meta.nextPageUrl` for pagination
-        meta = body.get("meta") or {}
-        next_url = meta.get("nextPageUrl") or body.get("nextPageUrl")
-        return contacts, next_url
-    except httpx.HTTPStatusError as e:
-        log.error("GHL API error %s for location %s: %s", e.response.status_code, location_id, e.response.text[:200])
-        return [], None
-    except Exception as e:
-        log.error("GHL fetch error for location %s: %s", location_id, e)
-        return [], None
-
-
-async def sync_agency(db: Session, agency: Agency, *, full: bool = False) -> dict[str, int]:
-    """Pull contacts from GHL and upsert into LeaderboardContact.
+async def sync_agency(db: Session, agency: Agency, *, full: bool = False) -> dict[str, Any]:
+    """Pull contacts from GHL and upsert into leaderboard_contacts.
 
     Args:
-        full: If True, re-sync all time (slow). If False, incremental since last sync.
-    Returns dict with counts.
+        full: True → scan all pages (no early exit). False → incremental.
+
+    Returns dict with sync stats.
     """
-    if not agency.ghl_pit_token_enc or not agency.ghl_location_id:
-        log.debug("Agency %s has no GHL credentials — skipping sync", agency.slug)
-        return {"skipped": 1}
+    pit_token = get_pit_token(agency)
+    if not pit_token:
+        log.debug("Agency %s has no GHL credentials — skipping", agency.slug)
+        return {"skipped": 1, "reason": "no_ghl_credentials"}
+
+    field_map = get_field_map(agency)
+    created = updated = skipped = 0
+    consecutive_unchanged = 0
+    partial_failure = False
+    batch_count = 0
 
     try:
-        pit_token = decrypt_secret(agency.ghl_pit_token_enc)
-    except Exception:
-        log.warning("Could not decrypt GHL token for agency %s", agency.slug)
-        return {"error": 1}
-
-    created = updated = 0
-    start_after: str | None = None
-
-    async with httpx.AsyncClient() as client:
-        while True:
-            contacts, next_url = await _fetch_contacts_page(
-                client, pit_token, agency.ghl_location_id,
-                start_after=start_after,
+        async for contact_id, sc in stream_qualified_contacts(
+            pit_token, agency.ghl_location_id, field_map
+        ):
+            was_created, was_changed = upsert_contact_from_slim(
+                db, agency=agency, contact_id=contact_id, sc=sc
             )
-            if not contacts:
+
+            if was_created:
+                created += 1
+                consecutive_unchanged = 0
+            elif was_changed:
+                updated += 1
+                consecutive_unchanged = 0
+            else:
+                skipped += 1
+                consecutive_unchanged += 1
+
+            batch_count += 1
+            if batch_count >= BATCH_SIZE:
+                db.commit()
+                batch_count = 0
+
+            # Incremental early exit: stop when we see a long run of unchanged rows
+            if not full and consecutive_unchanged >= EARLY_EXIT_THRESHOLD:
+                log.info(
+                    "Agency %s: incremental early exit after %d unchanged rows",
+                    agency.slug, consecutive_unchanged,
+                )
                 break
 
-            for c in contacts:
-                fields = _contact_to_fields(c)
-                contact_id = str(c.get("id") or c.get("contactId") or "")
-                if not contact_id:
-                    continue
-
-                existing = db.execute(
-                    select(LeaderboardContact).where(
-                        LeaderboardContact.ghl_location_id == agency.ghl_location_id,
-                        LeaderboardContact.ghl_contact_id == contact_id,
-                    )
-                ).scalar_one_or_none()
-
-                if existing:
-                    for k, v in fields.items():
-                        setattr(existing, k, v)
-                    existing.last_synced_at = datetime.now(timezone.utc)
-                    updated += 1
-                else:
-                    db.add(LeaderboardContact(
-                        agency_id=agency.id,
-                        ghl_location_id=agency.ghl_location_id,
-                        ghl_contact_id=contact_id,
-                        source="ghl_sync",
-                        **fields,
-                    ))
-                    created += 1
-
+        if batch_count > 0:
             db.commit()
 
-            if not next_url:
-                break
+    except Exception as exc:
+        # Preserve any partial progress committed so far
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+        partial_failure = True
+        log.exception("GHL sync failed for agency %s (created=%d, updated=%d): %s", agency.slug, created, updated, exc)
 
-            # Extract startAfter token from next URL for pagination
-            if "startAfter=" in next_url:
-                start_after = next_url.split("startAfter=")[-1].split("&")[0]
-            else:
-                break
+    result: dict[str, Any] = {
+        "created": created,
+        "updated": updated,
+        "skipped": skipped,
+    }
+    if partial_failure:
+        result["partial_failure"] = True
+    log.info(
+        "GHL sync done for agency %s: created=%d updated=%d skipped=%d%s",
+        agency.slug, created, updated, skipped, " (PARTIAL)" if partial_failure else "",
+    )
+    return result
 
-    log.info("Synced agency %s: %d created, %d updated", agency.slug, created, updated)
-    return {"created": created, "updated": updated}
 
+# ── sync all agencies ───────────────────────────────────────────────────────
 
 async def sync_all_agencies(db: Session) -> dict[str, Any]:
-    """Called by the worker cron every 30 minutes."""
+    """Called by the worker cron every 30 minutes.
+
+    Every 3rd call is a full scan; otherwise incremental.
+    Deduplicates by location_id so shared sub-accounts aren't scanned twice.
+    """
+    global _sync_counter
+    _sync_counter += 1
+    full = (_sync_counter % 3) == 0
+
+    if full:
+        log.info("GHL sync-all: FULL scan (run %d)", _sync_counter)
+    else:
+        log.info("GHL sync-all: incremental (run %d)", _sync_counter)
+
     agencies = db.execute(
         select(Agency).where(
             Agency.is_active == True,  # noqa: E712
-            Agency.ghl_location_id != "",
-            Agency.ghl_pit_token_enc != "",
         )
     ).scalars().all()
 
-    results = {}
-    for agency in agencies:
-        results[agency.slug] = await sync_agency(db, agency)
+    # Deduplicate by location_id — same GHL sub-account shared by multiple
+    # Agency rows should only be synced once per run.
+    seen_locations: set[str] = set()
+    results: dict[str, Any] = {}
 
-    return results
+    for agency in agencies:
+        if not agency.ghl_location_id or not agency.ghl_pit_token_enc:
+            continue
+        if agency.ghl_location_id in seen_locations:
+            log.debug("Agency %s shares location %s — skipping duplicate sync", agency.slug, agency.ghl_location_id)
+            continue
+        seen_locations.add(agency.ghl_location_id)
+        results[agency.slug] = await sync_agency(db, agency, full=full)
+
+    return {"run": _sync_counter, "full": full, "agencies": results}

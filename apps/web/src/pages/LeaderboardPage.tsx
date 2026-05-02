@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { apiGet, apiPost } from '../lib/api'
 
-type MeLite = { role: string; agency_id: string }
+type MeLite = { role: string; agency_id: string } | null
 
 /* ─── helpers ─── */
 const fmt$ = (n: number) =>
@@ -253,7 +253,7 @@ function SidePanel({ data, accentColor, label, icon }: {
 }
 
 /* ─── Main component ─── */
-export function LeaderboardPage({ token, me }: { token: string; me: MeLite }) {
+export function LeaderboardPage({ me }: { me: { role: string; agency_id: string } | null }) {
   const { agencySlug } = useParams<{ agencySlug: string }>()
   const navigate = useNavigate()
   const [data, setData] = useState<LBResponse | null>(null)
@@ -262,6 +262,8 @@ export function LeaderboardPage({ token, me }: { token: string; me: MeLite }) {
   const [activeTab, setActiveTab] = useState<'leaders' | 'breakdown'>('leaders')
   const [breakdownPeriod, setBreakdownPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily')
   const [syncing, setSyncing] = useState(false)
+
+  const token = localStorage.getItem('token') || ''
 
   const fetchRef = useRef(false)
   const prevDealMap = useRef<Record<string, number>>({})
@@ -321,7 +323,7 @@ export function LeaderboardPage({ token, me }: { token: string; me: MeLite }) {
   }
 
   if (loading && !data) return (
-    <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: '#0b1426', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <RefreshCw style={{ width: 48, height: 48, color: '#c9a84c', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
         <p style={{ color: 'rgba(255,255,255,.6)', fontSize: 18 }}>Loading leaderboard…</p>
@@ -330,11 +332,11 @@ export function LeaderboardPage({ token, me }: { token: string; me: MeLite }) {
   )
 
   if (error && !data) return (
-    <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: '#0b1426', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <AlertCircle style={{ width: 48, height: 48, color: '#f87171', margin: '0 auto 16px' }} />
         <p style={{ color: '#f87171', fontSize: 18, marginBottom: 16 }}>{error}</p>
-        <button onClick={fetch} className="btn btnGold">Retry</button>
+        <button onClick={fetch} style={{ padding: '10px 24px', borderRadius: 12, background: 'rgba(201,168,76,.15)', border: '1.5px solid rgba(201,168,76,.3)', color: '#ddb84d', fontWeight: 700, cursor: 'pointer' }}>Retry</button>
       </div>
     </div>
   )
@@ -356,20 +358,22 @@ export function LeaderboardPage({ token, me }: { token: string; me: MeLite }) {
   const planAccents    = ['#c9a84c','#3b82f6','#dc2626','#059669','#d97706']
 
   return (
-    <div style={{ color: '#e4e6eb' }}>
+    <div style={{ minHeight: '100vh', background: '#0b1426', color: '#e4e6eb' }}>
       {tierQueue.length > 0 && <TierUpCelebration event={tierQueue[0]} onDone={() => setTierQueue(q => q.slice(1))} />}
 
-      {/* Header bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-        padding: '14px 0 20px', borderBottom: '2px solid rgba(201,168,76,.22)', marginBottom: 24, flexWrap: 'wrap' }}>
+      {/* Header bar — navy + gold (matches original) */}
+      <header style={{ position: 'sticky', top: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 32px', height: 72, gap: 12, flexWrap: 'wrap',
+        background: 'linear-gradient(135deg,#1a3058,#15284d,#1a3058)',
+        borderBottom: '3px solid rgba(201,168,76,.4)', boxShadow: '0 4px 24px rgba(0,0,0,.5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 46, height: 46, borderRadius: 12, background: 'linear-gradient(135deg,#c9a84c,#a88a35)',
-            boxShadow: '0 4px 16px rgba(201,168,76,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Shield style={{ width: 24, height: 24, color: '#fff' }} />
+          <div style={{ width: 50, height: 50, borderRadius: 12, background: 'linear-gradient(135deg,#c9a84c,#a88a35)',
+            boxShadow: '0 4px 20px rgba(201,168,76,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Shield style={{ width: 26, height: 26, color: '#fff' }} />
           </div>
           <div>
-            <h1 style={{ fontSize: 'clamp(18px,4vw,26px)', fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-.02em' }}>
-              {data.agency_name}
+            <h1 style={{ fontSize: 'clamp(16px,4vw,26px)', fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-.02em' }}>
+              {data?.agency_name || agencySlug || 'Leaderboard'}
             </h1>
             <p style={{ fontSize: 12, fontWeight: 700, color: '#c9a84c', letterSpacing: '2px', textTransform: 'uppercase', margin: 0 }}>
               Agent Leaderboard
@@ -377,21 +381,42 @@ export function LeaderboardPage({ token, me }: { token: string; me: MeLite }) {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          {me.role === 'super_admin' && (
-            <button onClick={manualSync} disabled={syncing} className="btn btnGold" style={{ fontSize: 12, padding: '7px 14px' }}>
+          {me?.role === 'super_admin' && (
+            <button onClick={manualSync} disabled={syncing}
+              style={{ padding: '8px 14px', borderRadius: 10, border: '1.5px solid rgba(201,168,76,.3)',
+                background: 'rgba(201,168,76,.12)', color: '#c9a84c', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
               {syncing ? '↻ Syncing…' : '↻ Sync GHL'}
             </button>
           )}
-          <button onClick={fetch} style={{ padding: '8px 10px', borderRadius: 10, border: '1.5px solid rgba(255,255,255,.12)',
-            background: 'transparent', color: 'rgba(255,255,255,.5)', cursor: 'pointer' }}>
+          <button onClick={fetch}
+            style={{ padding: '8px 10px', borderRadius: 10, border: '1.5px solid rgba(255,255,255,.12)',
+              background: 'transparent', color: 'rgba(255,255,255,.5)', cursor: 'pointer' }}>
             <RefreshCw style={{ width: 18, height: 18 }} />
           </button>
-          <Link to="/leaderboard" style={{ padding: '8px 10px', borderRadius: 10, border: '1.5px solid rgba(255,255,255,.12)',
-            background: 'transparent', color: 'rgba(255,255,255,.5)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+          <Link to="/leaderboard"
+            style={{ padding: '8px 10px', borderRadius: 10, border: '1.5px solid rgba(255,255,255,.12)',
+              background: 'transparent', color: 'rgba(255,255,255,.5)', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, textDecoration: 'none' }}>
             <ChevronLeft style={{ width: 16, height: 16 }} /> All agencies
           </Link>
+          {me ? (
+            <Link to="/"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 12, fontWeight: 700, fontSize: 14,
+                background: 'linear-gradient(135deg,#c9a84c,#a88a35)', color: '#142748', textDecoration: 'none',
+                boxShadow: '0 4px 16px rgba(201,168,76,.35)' }}>
+              Portal
+            </Link>
+          ) : (
+            <Link to="/login"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 12, fontWeight: 700, fontSize: 14,
+                background: 'linear-gradient(135deg,#c9a84c,#a88a35)', color: '#142748', textDecoration: 'none',
+                boxShadow: '0 4px 16px rgba(201,168,76,.35)' }}>
+              Login
+            </Link>
+          )}
         </div>
-      </div>
+      </header>
+
+      <div style={{ maxWidth: 1320, margin: '0 auto', padding: '28px 24px' }}>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -614,6 +639,7 @@ export function LeaderboardPage({ token, me }: { token: string; me: MeLite }) {
       <div style={{ textAlign: 'center', padding: '24px 0 8px', color: 'rgba(255,255,255,.18)', fontSize: 12, fontWeight: 600 }}>
         Last updated: {data.last_sync ? new Date(data.last_sync).toLocaleString() : 'No sync yet'} · Refreshes every 60s
       </div>
+    </div>
     </div>
   )
 }

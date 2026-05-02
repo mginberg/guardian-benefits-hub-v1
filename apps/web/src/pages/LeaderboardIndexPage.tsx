@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Trophy, Building2, ChevronRight, Shield, Globe2 } from 'lucide-react'
 import { apiGet } from '../lib/api'
 
 interface AgencyInfo { slug: string; name: string; code: string }
 
-export function LeaderboardIndexPage({ token }: { token: string }) {
+export function LeaderboardIndexPage() {
   const navigate = useNavigate()
   const [agencies, setAgencies] = useState<AgencyInfo[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    apiGet<AgencyInfo[]>('/api/leaderboard', token)
+    apiGet<AgencyInfo[]>('/api/leaderboard')
       .then(d => setAgencies(Array.isArray(d) ? d : []))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [token])
+  }, [])
 
   const Card = ({ onClick, gradient, borderColor, shadowColor, children }: {
     onClick: () => void; gradient: string; borderColor: string; shadowColor: string; children: React.ReactNode
@@ -31,8 +31,20 @@ export function LeaderboardIndexPage({ token }: { token: string }) {
     </button>
   )
 
+  const isLoggedIn = !!localStorage.getItem('token')
+
   return (
-    <div>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0b1426 0%,#1a2744 50%,#0b1426 100%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3rem 1rem' }}>
+      {/* Top right login */}
+      <div style={{ position: 'absolute', top: 20, right: 24 }}>
+        <Link to={isLoggedIn ? '/' : '/login'}
+          style={{ padding: '9px 20px', borderRadius: 12, fontWeight: 700, fontSize: 14,
+            background: 'linear-gradient(135deg,#c9a84c,#a88a35)', color: '#142748', textDecoration: 'none',
+            boxShadow: '0 4px 16px rgba(201,168,76,.35)' }}>
+          {isLoggedIn ? 'Portal' : 'Login'}
+        </Link>
+      </div>
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: 40 }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>

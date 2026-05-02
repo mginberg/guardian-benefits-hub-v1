@@ -45,6 +45,14 @@ class Agency(Base):
     ghl_location_id: Mapped[str] = mapped_column(String, default="")
     ghl_pit_token_enc: Mapped[str] = mapped_column(Text, default="")
 
+    # GHL custom field IDs for leaderboard (per-agency, override defaults)
+    # If empty, DEFAULT_GHL_FIELD_MAP fallbacks are used (from ghl_client.py)
+    ghl_agent_field_id: Mapped[str] = mapped_column(String, default="")    # field ID for agent name
+    ghl_premium_field_id: Mapped[str] = mapped_column(String, default="")  # field ID for monthly premium
+    ghl_plan_field_id: Mapped[str] = mapped_column(String, default="")     # field ID for plan name
+    # JSON blob for any additional field ID overrides {"key": "ghl_field_id", ...}
+    ghl_field_map: Mapped[str] = mapped_column(Text, default="{}")
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 

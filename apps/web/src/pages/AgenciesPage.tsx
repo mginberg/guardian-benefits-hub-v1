@@ -9,6 +9,10 @@ type Agency = {
   unl_prefix: string
   ghl_location_id: string
   ghl_pit_token_set: boolean
+  ghl_agent_field_id: string
+  ghl_premium_field_id: string
+  ghl_plan_field_id: string
+  ghl_field_map: string
 }
 
 export function AgenciesPage({ token }: { token: string }) {
@@ -28,6 +32,9 @@ export function AgenciesPage({ token }: { token: string }) {
   const [editPrefix, setEditPrefix] = useState('')
   const [editGhlLocationId, setEditGhlLocationId] = useState('')
   const [editPitToken, setEditPitToken] = useState('')
+  const [editAgentFieldId, setEditAgentFieldId] = useState('')
+  const [editPremiumFieldId, setEditPremiumFieldId] = useState('')
+  const [editPlanFieldId, setEditPlanFieldId] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveMsg, setSaveMsg] = useState('')
 
@@ -57,6 +64,9 @@ export function AgenciesPage({ token }: { token: string }) {
     setEditPrefix(selected.unl_prefix || '')
     setEditGhlLocationId(selected.ghl_location_id || '')
     setEditPitToken('')
+    setEditAgentFieldId(selected.ghl_agent_field_id || '')
+    setEditPremiumFieldId(selected.ghl_premium_field_id || '')
+    setEditPlanFieldId(selected.ghl_plan_field_id || '')
     setSaveMsg('')
   }, [selected?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -196,6 +206,29 @@ export function AgenciesPage({ token }: { token: string }) {
                     onChange={(e) => setEditGhlLocationId(e.target.value)} placeholder="loc_..." />
                 </div>
 
+                <hr className="divider" />
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  GHL Custom Field IDs — leave blank to use Guardian Benefits defaults
+                </div>
+                <div className="field">
+                  <label className="fieldLabel">Agent Name Field ID</label>
+                  <input className="input" style={{ width: '100%' }} value={editAgentFieldId}
+                    onChange={(e) => setEditAgentFieldId(e.target.value)}
+                    placeholder="e.g. vnvXADl6hMkqRrKIkyvw (from GHL custom fields)" />
+                </div>
+                <div className="field">
+                  <label className="fieldLabel">Monthly Premium Field ID</label>
+                  <input className="input" style={{ width: '100%' }} value={editPremiumFieldId}
+                    onChange={(e) => setEditPremiumFieldId(e.target.value)}
+                    placeholder="e.g. dKIrCNiUvpHV7o2IVNLQ" />
+                </div>
+                <div className="field">
+                  <label className="fieldLabel">Plan Name Field ID</label>
+                  <input className="input" style={{ width: '100%' }} value={editPlanFieldId}
+                    onChange={(e) => setEditPlanFieldId(e.target.value)}
+                    placeholder="e.g. QE4TstnSBeYlHBWmX5ML" />
+                </div>
+
                 {saveMsg && (
                   <div style={{ fontSize: 'var(--text-xs)', color: 'var(--green)', fontWeight: 700 }}>{saveMsg}</div>
                 )}
@@ -209,7 +242,13 @@ export function AgenciesPage({ token }: { token: string }) {
                     try {
                       const updated = await apiPatch<Agency>(
                         `/api/agencies/${selected.id}`,
-                        { name: editName, is_active: editActive, unl_prefix: editPrefix, ghl_location_id: editGhlLocationId },
+                        {
+                          name: editName, is_active: editActive, unl_prefix: editPrefix,
+                          ghl_location_id: editGhlLocationId,
+                          ghl_agent_field_id: editAgentFieldId,
+                          ghl_premium_field_id: editPremiumFieldId,
+                          ghl_plan_field_id: editPlanFieldId,
+                        },
                         token,
                       )
                       setAgencies((prev) => prev.map((x) => (x.id === updated.id ? updated : x)).sort((a, b) => a.slug.localeCompare(b.slug)))
