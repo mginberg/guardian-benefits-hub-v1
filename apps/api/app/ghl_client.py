@@ -216,7 +216,7 @@ def slim_contact(raw: dict, field_map: dict[str, str]) -> Optional[SlimContact]:
     premium = _parse_premium(_fv("monthly_premium"))
     date = _parse_contact_date(raw)
     state = (raw.get("state") or raw.get("address1State") or "").strip()
-    plan_name = _fv("plan_name")
+    plan_name = _fv("plan_name").title()
 
     return SlimContact(
         agent_name=agent_name,

@@ -21,6 +21,12 @@ def _run_migrations() -> None:
                 ADD COLUMN IF NOT EXISTS ghl_plan_field_id   VARCHAR  NOT NULL DEFAULT '',
                 ADD COLUMN IF NOT EXISTS ghl_field_map       TEXT     NOT NULL DEFAULT '{}'
         """))
+        # Normalize plan_name casing on existing rows — deduplicate e.g. "HOSPITAL INDEMNITY SHIELD" vs "Hospital Indemnity Shield"
+        conn.execute(text("""
+            UPDATE leaderboard_contacts
+               SET plan_name = INITCAP(plan_name)
+             WHERE plan_name IS NOT NULL AND plan_name <> '' AND plan_name <> INITCAP(plan_name)
+        """))
         conn.commit()
 
 
